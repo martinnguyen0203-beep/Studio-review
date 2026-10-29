@@ -971,15 +971,72 @@
     };
 
     // ========================================================================
-    // 0. CÁC NÚT CHỈ ĐƯỜNG DẪN (WINDOWS NATIVE FILE / FOLDER PICKERS)
+    // 0. CÁC NÚT CHỈ ĐƯỜNG DẪN (WINDOWS NATIVE FILE / FOLDER PICKERS + HTML5 FALLBACK)
     // ========================================================================
-    async function pickFileDialog({ title, filter, initialDir = "", readText = false }) {
-      const res = await fetch("/api/dialog/pick-file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, filter, initialDir, readText })
+    function openBrowserFilePicker({ filter = "", readText = false }) {
+      return new Promise((resolve) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        if (filter.includes("*.mp4")) input.accept = "video/*,.mp4,.mkv,.mov,.avi,.webm";
+        else if (filter.includes("*.srt")) input.accept = ".srt,.txt";
+        else if (filter.includes("*.wav")) input.accept = "audio/*,.wav,.mp3,.m4a,.flac";
+        input.style.display = "none";
+        document.body.appendChild(input);
+
+        input.onchange = (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) {
+            document.body.removeChild(input);
+            return resolve({ ok: true, canceled: true });
+          }
+          const fullPath = file.path || file.name;
+          if (readText) {
+            const reader = new FileReader();
+            reader.onload = (re) => {
+              document.body.removeChild(input);
+              resolve({ ok: true, canceled: false, path: fullPath, content: re.target.result });
+            };
+            reader.onerror = () => {
+              document.body.removeChild(input);
+              resolve({ ok: true, canceled: false, path: fullPath, content: "" });
+            };
+            reader.readAsText(file);
+          } else {
+            document.body.removeChild(input);
+            resolve({ ok: true, canceled: false, path: fullPath });
+          }
+        };
+
+        window.addEventListener("focus", () => {
+          setTimeout(() => {
+            if (document.body.contains(input) && (!input.files || !input.files.length)) {
+              document.body.removeChild(input);
+              resolve({ ok: true, canceled: true });
+            }
+          }, 600);
+        }, { once: true });
+
+        input.click();
       });
-      return await res.json();
+    }
+
+    async function pickFileDialog({ title, filter, initialDir = "", readText = false }) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 1400);
+        const res = await fetch("/api/dialog/pick-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, filter, initialDir, readText }),
+          signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        const data = await res.json();
+        if (data.ok && !data.canceled && data.path) {
+          return data;
+        }
+      } catch (_) {}
+      return await openBrowserFilePicker({ filter, readText });
     }
 
     document.getElementById("btnPickVideo").addEventListener("click", async () => {
