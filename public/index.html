@@ -1355,6 +1355,37 @@
       el.textContent = msg;
     }
 
+    function toast(msg, type = "info") {
+      let box = document.getElementById("globalToast");
+      if (!box) {
+        box = document.createElement("div");
+        box.id = "globalToast";
+        box.style.position = "fixed";
+        box.style.bottom = "24px";
+        box.style.right = "24px";
+        box.style.zIndex = "99999";
+        box.style.padding = "12px 18px";
+        box.style.borderRadius = "8px";
+        box.style.fontSize = "13px";
+        box.style.fontWeight = "500";
+        box.style.boxShadow = "0 8px 24px rgba(0,0,0,0.5)";
+        box.style.transition = "all 0.3s ease";
+        box.style.maxWidth = "420px";
+        box.style.wordBreak = "break-word";
+        document.body.appendChild(box);
+      }
+      box.style.background = type === "err" ? "#ef4444" : (type === "ok" ? "#10b981" : "#6366f1");
+      box.style.color = "#ffffff";
+      box.style.display = "block";
+      box.style.opacity = "1";
+      box.innerText = msg;
+      clearTimeout(box._timer);
+      box._timer = setTimeout(() => {
+        box.style.opacity = "0";
+        setTimeout(() => (box.style.display = "none"), 300);
+      }, 4000);
+    }
+
     // ========================================================================
     // 1. CHUYỂN TAB & THEME (MẶC ĐỊNH CHỌN DARK)
     // ========================================================================

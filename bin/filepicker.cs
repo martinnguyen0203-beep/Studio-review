@@ -96,6 +96,9 @@ namespace FilePicker {
                             File.WriteAllText(outPath, result, Encoding.UTF8);
                         } catch { }
                     }
+                    try {
+                        Console.WriteLine(result);
+                    } catch { }
                     return 0;
                 }
                 return 1;

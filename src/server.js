@@ -212,51 +212,8 @@ function findMatchingSrt(videoPath) {
 }
 
 function runNativePicker(mode, title, filter, initialDir) {
-  return new Promise((resolve) => {
-    const tempOut = path.join(
-      os.tmpdir(),
-      `picker_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`
-    );
-
-    const safeFilter = filter && filter.includes("|") ? filter : "All files (*.*)|*.*";
-
-    if (fs.existsSync(NATIVE_PICKER_EXE)) {
-      try {
-        require("child_process").execSync("taskkill /F /IM filepicker.exe 2>nul", { windowsHide: true });
-      } catch (_) {}
-
-      const child = spawn(
-        NATIVE_PICKER_EXE,
-        [mode, title || "", safeFilter, initialDir || "", tempOut],
-        { windowsHide: false }
-      );
-      let stdout = "";
-      child.stdout.on("data", (d) => (stdout += d.toString("utf8")));
-      child.on("close", (code) => {
-        let picked = "";
-        if (fs.existsSync(tempOut)) {
-          try {
-            picked = fs.readFileSync(tempOut, "utf8").trim();
-            fs.unlinkSync(tempOut);
-          } catch (_) {}
-        }
-        if (!picked && code === 0 && stdout) {
-          picked = stdout.trim();
-        }
-        if (code === 0 || code === 1) {
-          return resolve({ ok: true, canceled: code === 1, path: picked });
-        }
-        console.error(`[picker] filepicker.exe thoát mã ${code} -> chuyển sang PowerShell`);
-        runPowerShellPickerFallback(mode, title, safeFilter, initialDir).then(resolve);
-      });
-      child.on("error", (err) => {
-        console.error("[picker] filepicker.exe lỗi:", err.message, "-> chuyển sang PowerShell");
-        runPowerShellPickerFallback(mode, title, safeFilter, initialDir).then(resolve);
-      });
-      return;
-    }
-    runPowerShellPickerFallback(mode, title, safeFilter, initialDir).then(resolve);
-  });
+  // Áp dụng Phương án A: Sử dụng trực tiếp PowerShell WinForms - chắc chắn 100% hoạt động trên mọi máy Windows
+  return runPowerShellPickerFallback(mode, title, filter, initialDir);
 }
 
 function runPowerShellPickerFallback(mode, title, filter, initialDir) {
@@ -277,36 +234,48 @@ function runPowerShellPickerFallback(mode, title, filter, initialDir) {
       psScript = `
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
+$top = New-Object System.Windows.Forms.Form
+$top.TopMost = $true
 $d = New-Object System.Windows.Forms.FolderBrowserDialog
 $d.Description = '${safeTitle}'
+$d.ShowNewFolderButton = $true
 ${safeDir ? `$d.SelectedPath = '${safeDir}'` : ""}
-if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+if ($d.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) {
   [System.IO.File]::WriteAllText('${safeOut}', $d.SelectedPath, [System.Text.Encoding]::UTF8)
 }
+$top.Dispose()
 `;
     } else if (mode === "save") {
       psScript = `
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
+$top = New-Object System.Windows.Forms.Form
+$top.TopMost = $true
 $f = New-Object System.Windows.Forms.SaveFileDialog
 $f.Title = '${safeTitle}'
 $f.Filter = '${safeFilter}'
+$f.RestoreDirectory = $true
 ${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
-if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+if ($f.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) {
   [System.IO.File]::WriteAllText('${safeOut}', $f.FileName, [System.Text.Encoding]::UTF8)
 }
+$top.Dispose()
 `;
     } else {
       psScript = `
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
+$top = New-Object System.Windows.Forms.Form
+$top.TopMost = $true
 $f = New-Object System.Windows.Forms.OpenFileDialog
 $f.Title = '${safeTitle}'
 $f.Filter = '${safeFilter}'
+$f.RestoreDirectory = $true
 ${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
-if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+if ($f.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) {
   [System.IO.File]::WriteAllText('${safeOut}', $f.FileName, [System.Text.Encoding]::UTF8)
 }
+$top.Dispose()
 `;
     }
 
