@@ -1,0 +1,79 @@
+{
+  "activeProviderId": "ckey",
+  "activeModel": "deepseek-v4.1-flash",
+  "providers": {
+    "ckey": {
+      "id": "ckey",
+      "name": "CKey.vn (DeepSeek V4.1 Flash / Multi-Model)",
+      "baseUrl": "https://api.xah.io/v1",
+      "chatUrl": "https://api.xah.io/v1/chat/completions",
+      "modelsUrl": "https://api.xah.io/v1/models",
+      "defaultModel": "deepseek-v4.1-flash",
+      "models": [
+        "deepseek-v4.1-flash",
+        "deepseek-v4-pro",
+        "deepseek-chat",
+        "deepseek-reasoner",
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gpt-4o-mini",
+        "claude-3-7-sonnet"
+      ],
+      "reasoningEffort": "xhigh",
+      "apiKey": "",
+      "extraHeaders": {},
+      "isBuiltIn": true
+    },
+    "deepseek": {
+      "id": "deepseek",
+      "name": "DeepSeek Official (platform.deepseek.com)",
+      "baseUrl": "https://api.deepseek.com/v1",
+      "chatUrl": "https://api.deepseek.com/v1/chat/completions",
+      "modelsUrl": "https://api.deepseek.com/v1/models",
+      "balanceUrl": "https://api.deepseek.com/user/balance",
+      "defaultModel": "deepseek-chat",
+      "models": [
+        "deepseek-chat",
+        "deepseek-reasoner"
+      ],
+      "reasoningEffort": "",
+      "apiKey": "",
+      "extraHeaders": {},
+      "isBuiltIn": true
+    },
+    "gemini": {
+      "id": "gemini",
+      "name": "Google Gemini (aistudio.google.com)",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "chatUrl": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      "modelsUrl": "https://generativelanguage.googleapis.com/v1beta/openai/models",
+      "defaultModel": "gemini-2.5-flash",
+      "models": [
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gemini-2.0-flash"
+      ],
+      "reasoningEffort": "",
+      "apiKey": "",
+      "extraHeaders": {},
+      "isBuiltIn": true
+    },
+    "openai": {
+      "id": "openai",
+      "name": "OpenAI / OpenRouter / Custom Gateway",
+      "baseUrl": "https://api.openai.com/v1",
+      "chatUrl": "https://api.openai.com/v1/chat/completions",
+      "modelsUrl": "https://api.openai.com/v1/models",
+      "defaultModel": "gpt-4o-mini",
+      "models": [
+        "gpt-4o-mini",
+        "gpt-4o",
+        "o3-mini"
+      ],
+      "reasoningEffort": "",
+      "apiKey": "",
+      "extraHeaders": {},
+      "isBuiltIn": true
+    }
+  }
+}

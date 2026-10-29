@@ -1,0 +1,20 @@
+{
+  "name": "auto-studio-ai",
+  "version": "1.0.0",
+  "description": "Auto CapCut & Premiere Pro AI Studio with Multi-Provider API (CKey.vn / Custom OpenAI Base URL)",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "cli": "node src/cli.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "multer": "^2.5.0"
+  }
+}

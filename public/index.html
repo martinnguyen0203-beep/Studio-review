@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auto Studio AI — Review Phim Beam-Search & Premiere XML / CapCut</title>
+  <style>
+    :root, [data-theme="dark"] {
+      --bg-main: #0b0f17;
+      --bg-panel: #131a26;
+      --bg-card: #1a2333;
+      --bg-input: #0e1420;
+      --border: #28354a;
+      --border-focus: #6366f1;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-2: #38bdf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --render-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --render-shadow: 0 6px 0 #3730a3, 0 10px 24px rgba(99, 102, 241, 0.4);
+      --render-shadow-active: 0 1px 0 #3730a3, 0 3px 8px rgba(99, 102, 241, 0.3);
+    }
+
+    [data-theme="light"] {
+      --bg-main: #f1f5f9;
+      --bg-panel: #ffffff;
+      --bg-card: #f8fafc;
+      --bg-input: #ffffff;
+      --border: #cbd5e1;
+      --border-focus: #4f46e5;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-2: #0284c7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* Top Header */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: var(--render-grad);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-provider {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.14);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      font-size: 12.5px;
+      color: var(--text-primary);
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    /* Layout Container */
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px 60px;
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .nav-tab:hover {
+      color: var(--text-primary);
+      border-color: var(--accent);
+    }
+
+    .nav-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    /* Grid & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 1080px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .input-with-btn {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .input-with-btn input {
+      flex: 1;
+    }
+
+    .btn-browse {
+      white-space: nowrap;
+      padding: 9px 13px;
+      border-radius: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.12);
+      color: #38bdf8;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-browse:hover {
+      background: rgba(56, 189, 248, 0.24);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    .btn-browse:active {
+      transform: translateY(2px);
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea {
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.14s ease;
+      user-select: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.12);
+    }
+
+    .btn:active {
+      transform: translateY(2px);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-codex {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #34d399;
+    }
+
+    .btn-codex:hover {
+      background: rgba(16, 185, 129, 0.25);
+    }
+
+    /* Nút bấm [Render] có chuyển động lún xuống vật lý rõ rệt */
+    .btn-render {
+      width: 100%;
+      padding: 15px 28px;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #ffffff;
+      background: var(--render-grad);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: var(--render-shadow);
+      transform: translateY(0);
+      transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.08s ease, filter 0.15s ease;
+      user-select: none;
+    }
+
+    .btn-render:hover {
+      filter: brightness(1.08);
+    }
+
+    .btn-render:active,
+    .btn-render.is-pressed {
+      transform: translateY(5px) scale(0.985);
+      box-shadow: var(--render-shadow-active);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .status-box {
+      padding: 11px 14px;
+      border-radius: 9px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+
+    .status-box.ok {
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .status-box.err {
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    /* Table Cue List */
+    .cue-list {
+      max-height: 360px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-input);
+    }
+
+    .cue-item {
+      display: grid;
+      grid-template-columns: 52px 135px 80px 1fr;
+      gap: 10px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12.5px;
+      align-items: center;
+    }
+
+    .cue-item:last-child {
+      border-bottom: none;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .tag-kept { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+    .tag-edited { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
+    .tag-new { background: rgba(56, 189, 248, 0.18); color: #38bdf8; }
+    .tag-hook { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+
+    .check-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">AS</div>
+      <div>
+        <div class="brand-title">Auto Studio AI — Review Phim & Multi-API Engine</div>
+        <div class="brand-sub">Beam-Search Auto-Cut • Quy hoạch động Sørensen–Dice LCS • Xuất Premiere Pro XML & CapCut Draft</div>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="badge-provider" id="activeProviderBadge">
+        <span class="badge-dot"></span>
+        <span id="activeProviderText">CKey.vn • deepseek-v4.1-flash</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label for="displayThemeSelect" style="font-size:12px;color:var(--text-secondary);">Display Theme:</label>
+        <select id="displayThemeSelect" style="width:auto;padding:5px 10px;font-size:12px;">
+          <option value="dark" selected>Dark (Mặc định)</option>
+          <option value="light">Light</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- NAVIGATION TABS -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="tab-review">🎬 1. Review Phim AI & Beam-Search Auto-Cut</button>
+      <button class="nav-tab" data-tab="tab-api">⚙️ 2. Cài Đặt API Đa Nhà Cung Cấp (CKey.vn / Codex / Custom)</button>
+      <button class="nav-tab" data-tab="tab-translate">🌐 3. Dịch Phụ Đề AI Giữ Nguyên Mốc Thời Gian</button>
+      <button class="nav-tab" data-tab="tab-prompts">🎨 4. Tạo Prompt Ảnh / Video AI Theo Thoại</button>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAB 1: REVIEW PHIM AI & BEAM-SEARCH AUTO-CUT                       -->
+    <!-- ================================================================== -->
+    <section id="tab-review" class="tab-pane active">
+      <div class="grid-2">
+        <!-- CỘT TRÁI: NGUỒN PHIM, AI KỊCH BẢN & CẤU HÌNH CẮT CẢNH -->
+        <div>
+          <!-- BƯỚC 1: PHÂN TÍCH VIDEO & PHỤ ĐỀ GỐC -->
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <span class="step-badge">1</span>
+                Nguồn Video Gốc & Phụ Đề SRT (FFmpeg Shots + Robust Z-Score)
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Đường dẫn File Phim gốc (.mp4 / .mkv trên ổ cứng)</label>
+              <div class="input-with-btn">
+                <input type="text" id="rvVideoPath" spellcheck="false" placeholder="Ví dụ: D:\12 Project Review Phim\movie.mp4" />
+                <button type="button" class="btn-browse" id="btnPickVideo">📂 Chọn Video...</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Đường dẫn File Phụ đề gốc (.srt) — Hoặc dán trực tiếp nội dung SRT vào ô bên dưới</label>
+              <div class="input-with-btn">
+                <input type="text" id="rvSrtPath" spellcheck="false" placeholder="Ví dụ: D:\12 Project Review Phim\movie.srt" />
+                <button type="button" class="btn-browse" id="btnPickSrt">📂 Chọn .SRT...</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Nội dung Phụ đề gốc (.srt) [Tùy chọn dán trực tiếp]</label>
+              <textarea id="rvSrtContent" rows="4" spellcheck="false" placeholder="1&#10;00:00:01,000 --> 00:00:03,500&#10;Xin chào..."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Ngưỡng phát hiện chuyển cảnh FFmpeg</label>
+                <input type="number" id="rvSceneThresh" value="0.3" step="0.05" min="0.1" max="0.8" />
+              </div>
+              <div class="field">
+                <label>Độ dài Hook mở đầu (giây)</label>
+                <input type="number" id="rvHookSec" value="15" step="1" min="0" max="60" />
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btnAnalyzeVideo">🔍 Phân tích Video, Cao trào & Nhặt Hook 15s</button>
+              <label class="check-inline">
+                <input type="checkbox" id="rvNoSpoiler" checked />
+                <span>Chống Spoiler 15% cuối phim trong Hook</span>
+              </label>
+            </div>
+
+            <div id="rvAnalyzeStatus" class="status-box" style="display:none;"></div>
+          </div>
+
+          <!-- BƯỚC 2: AI VIẾT KỊCH BẢN REVIEW PHIM 4 GIAI ĐOẠN -->
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <span class="step-badge">2</span>
+                AI Viết Kịch Bản Review 4 Giai Đoạn (CKey.vn / Custom API)
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Phong cách Review</label>
+                <select id="rvStyle">
+                  <option value="kich-tinh" selected>🔥 Kịch tính & Cuốn hút (Mặc định)</option>
+                  <option value="tau-hai">😂 Tấu hài & Châm biếm duyên dáng</option>
+                  <option value="tam-ly">🌙 Tâm lý sâu sắc / Kể chuyện đêm khuya</option>
+                  <option value="trinh-tham">🕵️ Trinh thám & Phân tích phá án</option>
+                  <option value="tu-viet">✍️ Phong cách tự mô tả riêng</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Thời lượng mục tiêu (phút)</label>
+                <input type="number" id="rvTargetMin" value="6" min="1" max="45" step="0.5" />
+              </div>
+              <div class="field">
+                <label>Ngôn ngữ lời bình</label>
+                <select id="rvLang">
+                  <option value="vi" selected>Tiếng Việt (300 từ/phút)</option>
+                  <option value="en">English (160 words/min)</option>
+                  <option value="zh">中文 (240 字/min)</option>
+                  <option value="ko">한국어 (120 어절/min)</option>
+                  <option value="ja">日本語 (300 文字/min)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field" id="rvCustomStyleWrap" style="display:none;">
+              <label>Mô tả phong cách riêng của bạn</label>
+              <textarea id="rvCustomStyle" rows="2" spellcheck="false" placeholder="Ví dụ: Giọng kể trầm, nhịp dồn dập, không dùng câu hỏi tu từ..."></textarea>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-primary" id="btnGenerateScript">✨ AI Viết Kịch Bản Review 4 Bước</button>
+              <label class="check-inline">
+                <input type="checkbox" id="rvFunNames" />
+                <span>Đặt biệt danh tấu hài cho nhân vật chính</span>
+              </label>
+            </div>
+
+            <div id="rvScriptStatus" class="status-box" style="display:none;"></div>
+          </div>
+
+          <!-- BƯỚC 3: CẤU HÌNH BEAM-SEARCH AUTO-CUT & CHỐNG BẢN QUYỀN -->
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                <span class="step-badge">3</span>
+                Thuật Toán Beam-Search Cắt Cảnh (beamWidth = 48) & Chống Content ID
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Độ dài mỗi mảnh cắt Min (giây)</label>
+                <input type="number" id="rvCutMin" value="2.0" step="0.2" min="1.2" max="6.0" />
+              </div>
+              <div class="field">
+                <label>Độ dài mỗi mảnh cắt Max (giây)</label>
+                <input type="number" id="rvCutMax" value="3.0" step="0.2" min="1.5" max="8.0" />
+              </div>
+              <div class="field">
+                <label>Số mảnh cắt / câu (Min - Max)</label>
+                <div style="display:flex;gap:6px;">
+                  <input type="number" id="rvMinCuts" value="2" min="1" max="6" />
+                  <input type="number" id="rvMaxCuts" value="3" min="1" max="8" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Trần chạy liên tục tối đa (giây)</label>
+                <input type="number" id="rvMaxClip" value="6.0" step="0.5" min="2.0" max="15.0" />
+              </div>
+              <div class="field">
+                <label>Bước nhảy cảnh tối thiểu (giây)</label>
+                <input type="number" id="rvMinJump" value="2.0" step="0.5" min="0.5" max="10.0" />
+              </div>
+              <div class="field">
+                <label>Đệm nghỉ giữa 2 câu (giây)</label>
+                <input type="number" id="rvGapSec" value="0.12" step="0.02" min="0" max="1.0" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Phóng hình Zoom (1.08 = +8%)</label>
+                <input type="number" id="rvZoom" value="1.08" step="0.01" min="1.0" max="1.5" />
+              </div>
+              <div class="field">
+                <label>Âm lượng tiếng phim gốc (%)</label>
+                <input type="number" id="rvOrigVol" value="15" step="5" min="0" max="100" />
+              </div>
+              <div class="field" style="justify-content:center;padding-top:18px;">
+                <label class="check-inline">
+                  <input type="checkbox" id="rvFlip" checked />
+                  <span>Lật ngang hình (Mirror Flip)</span>
+                </label>
+                <label class="check-inline" style="margin-top:6px;">
+                  <input type="checkbox" id="rvIncludeHook" checked />
+                  <span>Đưa 15s Hook vào đầu Timeline</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Đường dẫn File Audio Giọng đọc tổng (.wav / .mp3) [Tùy chọn — Để gắn thẳng vào Track A1 Premiere]</label>
+              <div class="input-with-btn">
+                <input type="text" id="rvVoiceAudioPath" spellcheck="false" placeholder="Ví dụ: D:\12 Project Review Phim\voiceover.wav" />
+                <button type="button" class="btn-browse" id="btnPickVoiceAudio">📂 Chọn Audio...</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Đường dẫn File SRT Giọng đọc (.srt) [Tùy chọn — Để lấy thời lượng đọc chính xác từng câu]</label>
+              <div class="input-with-btn">
+                <input type="text" id="rvVoiceSrtPath" spellcheck="false" placeholder="Ví dụ: D:\12 Project Review Phim\voiceover.srt" />
+                <button type="button" class="btn-browse" id="btnPickVoiceSrt">📂 Chọn Voice .SRT...</button>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label>Chế độ Xuất Dự Án</label>
+                <select id="rvExportMode">
+                  <option value="premiere-xml" selected>🎬 Xuất Adobe Premiere Pro (.XML FCP7 XMEML v4 + Master .SRT)</option>
+                  <option value="capcut-draft">✂️ Can thiệp trực tiếp CapCut Project (draft_content.json)</option>
+                  <option value="both">⚡ Xuất Kép Cả Hai (Premiere Pro .XML + CapCut Draft)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Đường dẫn lưu File Premiere .XML (Để trống = tự lưu vào thư mục output/)</label>
+                <div class="input-with-btn">
+                  <input type="text" id="rvOutputXmlPath" spellcheck="false" placeholder="Ví dụ: D:\12 Project Review Phim\Review_Premiere.xml" />
+                  <button type="button" class="btn-browse" id="btnPickOutputXml">💾 Nơi lưu .XML...</button>
+                  <button type="button" class="btn" id="btnOpenXmlFolder" title="Mở thư mục chứa file XML trong Windows Explorer">📍 Mở thư mục</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="field" id="rvCapcutDraftWrap" style="display:none;">
+              <label>Đường dẫn thư mục Project CapCut (chứa draft_content.json)</label>
+              <div class="input-with-btn">
+                <input type="text" id="rvCapcutDraftPath" spellcheck="false" placeholder="Ví dụ: C:\Users\Admin\AppData\Local\CapCut\User Data\Projects\com.lveditor.draft\MyProject" />
+                <button type="button" class="btn-browse" id="btnPickCapcutFolder">📁 Chọn thư mục...</button>
+                <button type="button" class="btn btn-codex" id="btnAutoCapcutLatest">⚡ Tự lấy Project CapCut mới nhất</button>
+              </div>
+            </div>
+
+            <!-- NÚT BẤM [Render] CHUYỂN ĐỘNG LÚN XUỐNG -->
+            <div style="margin-top:16px;">
+              <button type="button" class="btn-render" id="btnRenderMain">Render</button>
+            </div>
+
+            <div id="rvRenderStatus" class="status-box" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- CỘT PHẢI: KHUNG BIÊN TẬP KỊCH BẢN (QUY HOẠCH ĐỘNG) & TIMELINE PREVIEW -->
+        <div>
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">
+                📝 Kịch Bản Lời Bình (Mỗi câu 1 dòng — Không gạch chân báo sai chính tả)
+              </div>
+              <button class="btn" id="btnRemapDp" title="Chạy Quy hoạch động Sørensen–Dice LCS để ánh xạ lại thời gian khi bạn sửa/thêm/xóa câu">
+                🔄 Khớp lại thời gian (Quy hoạch động LCS)
+              </button>
+            </div>
+
+            <div class="field">
+              <label>Bạn có thể sửa chữ, xóa câu hoặc chèn thêm câu mới thoải mái. Hệ thống tự động nội suy mốc thời gian video gốc!</label>
+              <textarea id="rvScriptEditor" rows="12" spellcheck="false" placeholder="Mỗi dòng là 1 câu lời bình. Bạn có thể bấm 'AI Viết Kịch Bản' ở Bước 2 hoặc tự dán kịch bản vào đây..."></textarea>
+            </div>
+
+            <div class="panel-head" style="margin-top:12px;">
+              <div class="panel-title">⏱️ Bảng Ánh Xạ Câu Lời Bình ↔ Cửa Sổ Thời Gian Video Gốc</div>
+              <span id="rvCueCountBadge" style="font-size:12px;color:var(--text-secondary);">0 câu</span>
+            </div>
+
+            <div class="cue-list" id="rvCueMappingList">
+              <div style="padding:18px;text-align:center;color:var(--text-muted);font-size:13px;">
+                Chưa có câu kịch bản nào. Hãy tạo kịch bản AI hoặc nhập các dòng lời bình vào ô trên rồi bấm "Khớp lại thời gian".
+              </div>
+            </div>
+          </div>
+
+          <!-- BẢNG KẾT QUẢ CẮT CẢNH BEAM-SEARCH -->
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">🎞️ Kết Quả Cắt Cảnh Beam-Search Trên Timeline</div>
+              <span id="rvPiecesSummary" style="font-size:12px;color:var(--accent-2);">Chưa Render</span>
+            </div>
+
+            <div class="cue-list" id="rvPiecesList" style="max-height:380px;">
+              <div style="padding:18px;text-align:center;color:var(--text-muted);font-size:13px;">
+                Bấm nút <b>[Render]</b> để chạy thuật toán Beam-Search cắt cảnh và xuất file Premiere Pro .XML!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- TAB 2: CÀI ĐẶT API AI ĐA NHÀ CUNG CẤP (CKEY.VN / CODEX / CUSTOM)   -->
+    <!-- ================================================================== -->
+    <section id="tab-api" class="tab-pane">
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">🔑 Cấu Hình Cổng AI Đang Sử Dụng (Mặc định: CKey.vn)</div>
+            <button class="btn btn-codex" id="btnImportCodex">
+              ⚡ Tự nạp Key & Model từ @openai/codex (~/.codex)
+            </button>
+          </div>
+
+          <div class="field">
+            <label>Chọn Nhà Cung Cấp API (Provider)</label>
+            <select id="apiProviderSelect"></select>
+          </div>
+
+          <div class="field">
+            <label>Tên hiển thị Nhà Cung Cấp</label>
+            <input type="text" id="apiProviderName" spellcheck="false" placeholder="CKey.vn (DeepSeek V4.1 Flash)" />
+          </div>
+
+          <div class="field">
+            <label>OpenAI-Compatible Base URL (CKey.vn dùng: https://api.xah.io/v1)</label>
+            <input type="text" id="apiBaseUrl" spellcheck="false" placeholder="https://api.xah.io/v1" />
+          </div>
+
+          <div class="field">
+            <label>API Key (Bearer Token)</label>
+            <input type="password" id="apiKeyInput" spellcheck="false" placeholder="Dán API Key từ https://ckey.vn/api-ai-dashboard..." />
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Model ID Đang Chọn (Gõ trực tiếp hoặc chọn từ danh sách)</label>
+              <input type="text" id="apiModelInput" list="apiModelDatalist" spellcheck="false" value="deepseek-v4.1-flash" />
+              <datalist id="apiModelDatalist"></datalist>
+            </div>
+            <div class="field">
+              <label>Reasoning Effort (CKey Codex dùng: xhigh)</label>
+              <select id="apiReasoningEffort">
+                <option value="xhigh" selected>xhigh (Khuyên dùng cho CKey Codex)</option>
+                <option value="high">high</option>
+                <option value="medium">medium</option>
+                <option value="low">low</option>
+                <option value="">Không gửi (Mặc định chuẩn OpenAI)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="btn-row" style="margin-top:8px;">
+            <button class="btn btn-primary" id="btnSaveApiSettings">💾 Lưu Cấu Hình API</button>
+            <button class="btn" id="btnFetchModels">🔄 Tải danh sách Model (/v1/models)</button>
+            <button class="btn" id="btnCheckApiKey">🧪 Kiểm tra Key & Test Phản Hồi</button>
+          </div>
+
+          <div id="apiStatusBox" class="status-box" style="display:none;"></div>
+        </div>
+
+        <!-- THÊM NHÀ CUNG CẤP BÊN THỨ 3 MỚI -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">➕ Thêm Nhà Cung Cấp API Bên Thứ 3 Mới (Custom OpenAI Gateway)</div>
+          </div>
+
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">
+            Bạn có thể thêm bất kỳ bên cung cấp API nào tương thích chuẩn OpenAI (như <b>CKey.vn</b>, <b>OpenRouter</b>, <b>SiliconFlow</b>, <b>Groq</b>, <b>YesScale</b>, <b>vLLM / Ollama Local</b>...).
+          </p>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Mã định danh (ID ngắn gọn)</label>
+              <input type="text" id="newProvId" spellcheck="false" placeholder="Ví dụ: ckey-backup, openrouter..." />
+            </div>
+            <div class="field">
+              <label>Tên Nhà Cung Cấp</label>
+              <input type="text" id="newProvName" spellcheck="false" placeholder="Ví dụ: CKey.vn Tài khoản 2" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Base URL (Endpoint gốc có /v1)</label>
+            <input type="text" id="newProvBaseUrl" spellcheck="false" value="https://api.xah.io/v1" />
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Model ID Mặc định</label>
+              <input type="text" id="newProvModel" spellcheck="false" value="deepseek-v4.1-flash" />
+            </div>
+            <div class="field">
+              <label>API Key</label>
+              <input type="password" id="newProvKey" spellcheck="false" placeholder="sk-..." />
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="btnAddCustomProvider">➕ Thêm & Kích Hoạt Nhà Cung Cấp Này</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- TAB 3: DỊCH PHỤ ĐỀ AI GIỮ NGUYÊN SỐ DÒNG & MỐC THỜI GIAN           -->
+    <!-- ================================================================== -->
+    <section id="tab-translate" class="tab-pane">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">🌐 Dịch Phụ Đề AI Đa Luồng (Giữ Nguyên 100% Số Dòng & Mốc Thời Gian)</div>
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label>Ngôn ngữ đích</label>
+            <input type="text" id="trTargetLang" spellcheck="false" value="Tiếng Việt" />
+          </div>
+          <div class="field">
+            <label>Ghi chú văn phong dịch</label>
+            <input type="text" id="trStyleNote" spellcheck="false" value="Tự nhiên, ngắn gọn, đúng ngữ cảnh thoại phim" />
+          </div>
+          <div class="field">
+            <label>Số dòng mỗi khối (Chunk Size)</label>
+            <input type="number" id="trChunkSize" value="45" min="10" max="100" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label>Phụ đề gốc (.srt hoặc văn bản từng dòng)</label>
+              <button type="button" class="btn-browse" id="btnPickTrFile" style="padding:4px 10px;font-size:11.5px;">📂 Chọn file .SRT / .TXT...</button>
+            </div>
+            <textarea id="trInputText" rows="14" spellcheck="false" placeholder="Dán nội dung file .srt gốc vào đây..."></textarea>
+          </div>
+          <div class="field">
+            <label>Kết quả Phụ đề đã dịch (.srt đồng bộ 1:1)</label>
+            <textarea id="trOutputText" rows="14" spellcheck="false" placeholder="Bản dịch giữ nguyên mốc thời gian sẽ hiển thị tại đây..."></textarea>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnRunTranslate">🚀 Dịch Phụ Đề Ngay</button>
+        </div>
+        <div id="trStatusBox" class="status-box" style="display:none;"></div>
+      </div>
+    </section>
+
+    <!-- ================================================================== -->
+    <!-- TAB 4: TẠO PROMPT ẢNH / VIDEO AI THEO TỪNG DÒNG THOẠI              -->
+    <!-- ================================================================== -->
+    <section id="tab-prompts" class="tab-pane">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">🎨 Tạo Prompt Ảnh / Video AI 1:1 Theo Từng Dòng Kịch Bản</div>
+        </div>
+
+        <div class="field">
+          <label>Phong cách Hình ảnh Chủ đạo (Visual Style Guideline)</label>
+          <input type="text" id="prVisualStyle" spellcheck="false" value="Cinematic 8k, photorealistic, dramatic movie lighting, shallow depth of field, 35mm film grain" />
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label>Kịch bản / Phụ đề đầu vào (Mỗi câu 1 dòng hoặc định dạng SRT)</label>
+              <button type="button" class="btn-browse" id="btnPickPrFile" style="padding:4px 10px;font-size:11.5px;">📂 Chọn file .SRT / .TXT...</button>
+            </div>
+            <textarea id="prInputText" rows="13" spellcheck="false" placeholder="Dán kịch bản lời bình vào đây..."></textarea>
+          </div>
+          <div class="field">
+            <label>Danh sách Prompt Tiếng Anh tương ứng từng dòng</label>
+            <textarea id="prOutputText" rows="13" spellcheck="false" placeholder="Prompt chi tiết cho từng câu sẽ xuất hiện tại đây..."></textarea>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnRunPrompts">🎨 Sinh Prompt Hàng Loạt</button>
+        </div>
+        <div id="prStatusBox" class="status-box" style="display:none;"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ========================================================================
+    // TRẠNG THÁI ỨNG DỤNG
+    // ========================================================================
+    const state = {
+      aiSettings: null,
+      videoInfo: null,
+      shots: [],
+      highlights: [],
+      hookClips: [],
+      srtCues: [],
+      scriptCues: [],
+      lastOutputXmlPath: ""
+    };
+
+    // ========================================================================
+    // 0. CÁC NÚT CHỈ ĐƯỜNG DẪN (WINDOWS NATIVE FILE / FOLDER PICKERS)
+    // ========================================================================
+    async function pickFileDialog({ title, filter, initialDir = "", readText = false }) {
+      const res = await fetch("/api/dialog/pick-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, filter, initialDir, readText })
+      });
+      return await res.json();
+    }
+
+    document.getElementById("btnPickVideo").addEventListener("click", async () => {
+      const cur = document.getElementById("rvVideoPath").value.trim();
+      const data = await pickFileDialog({
+        title: "Chọn File Phim gốc (.mp4, .mkv, .mov, .avi)",
+        filter: "Video Files (*.mp4;*.mkv;*.mov;*.avi;*.webm)|*.mp4;*.mkv;*.mov;*.avi;*.webm|All Files (*.*)|*.*",
+        initialDir: cur
+      });
+      if (data.ok && !data.canceled && data.path) {
+        document.getElementById("rvVideoPath").value = data.path;
+        // Tự động gợi ý đường dẫn lưu file Premiere XML cùng thư mục nếu đang trống
+        const outXmlEl = document.getElementById("rvOutputXmlPath");
+        if (!outXmlEl.value.trim()) {
+          outXmlEl.value = data.path.replace(/\.[^.\\/]+$/, "_Premiere.xml");
+        }
+      }
+    });
+
+    document.getElementById("btnPickSrt").addEventListener("click", async () => {
+      const cur = document.getElementById("rvSrtPath").value.trim() || document.getElementById("rvVideoPath").value.trim();
+      const data = await pickFileDialog({
+        title: "Chọn File Phụ đề gốc (.srt)",
+        filter: "Subtitle Files (*.srt;*.txt)|*.srt;*.txt|All Files (*.*)|*.*",
+        initialDir: cur,
+        readText: true
+      });
+      if (data.ok && !data.canceled && data.path) {
+        document.getElementById("rvSrtPath").value = data.path;
+        if (data.content) {
+          document.getElementById("rvSrtContent").value = data.content;
+        }
+      }
+    });
+
+    document.getElementById("btnPickVoiceAudio").addEventListener("click", async () => {
+      const cur = document.getElementById("rvVoiceAudioPath").value.trim() || document.getElementById("rvVideoPath").value.trim();
+      const data = await pickFileDialog({
+        title: "Chọn File Audio Giọng đọc (.wav, .mp3, .m4a)",
+        filter: "Audio Files (*.wav;*.mp3;*.m4a;*.flac;*.aac)|*.wav;*.mp3;*.m4a;*.flac;*.aac|All Files (*.*)|*.*",
+        initialDir: cur
+      });
+      if (data.ok && !data.canceled && data.path) {
+        document.getElementById("rvVoiceAudioPath").value = data.path;
+      }
+    });
+
+    document.getElementById("btnPickVoiceSrt").addEventListener("click", async () => {
+      const cur = document.getElementById("rvVoiceSrtPath").value.trim() || document.getElementById("rvVoiceAudioPath").value.trim();
+      const data = await pickFileDialog({
+        title: "Chọn File Phụ đề Giọng đọc (.srt)",
+        filter: "Subtitle Files (*.srt;*.txt)|*.srt;*.txt|All Files (*.*)|*.*",
+        initialDir: cur
+      });
+      if (data.ok && !data.canceled && data.path) {
+        document.getElementById("rvVoiceSrtPath").value = data.path;
+      }
+    });
+
+    document.getElementById("btnPickOutputXml").addEventListener("click", async () => {
+      const res = await fetch("/api/dialog/pick-save-file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Chọn nơi lưu File Adobe Premiere Pro (.xml)",
+          filter: "Premiere Pro XML (*.xml)|*.xml|All Files (*.*)|*.*",
+          defaultName: "Review_Premiere.xml"
+        })
+      });
+      const data = await res.json();
+      if (data.ok && !data.canceled && data.path) {
+        document.getElementById("rvOutputXmlPath").value = data.path;
+      }
+    });
+
+    document.getElementById("btnOpenXmlFolder").addEventListener("click", async () => {
+      const targetPath =
+        document.getElementById("rvOutputXmlPath").value.trim() ||
+        state.lastOutputXmlPath ||
+        "output";
+      await fetch("/api/dialog/open-explorer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetPath })
+      });
+    });
+
+    document.getElementById("btnPickCapcutFolder").addEventListener("click", async () => {
+      const res = await fetch("/api/dialog/pick-folder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: "Chọn thư mục Project CapCut (chứa draft_content.json)" })
+      });
+      const data = await res.json();
+      if (data.ok && !data.canceled && data.path) {
+        document.getElementById("rvCapcutDraftPath").value = data.path;
+      }
+    });
+
+    document.getElementById("btnAutoCapcutLatest").addEventListener("click", async () => {
+      const res = await fetch("/api/dialog/capcut-projects");
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.projects) && data.projects.length) {
+        document.getElementById("rvCapcutDraftPath").value = data.projects[0].path;
+        showStatus("rvRenderStatus", `✅ Đã tự chọn Project CapCut mới nhất: "${data.projects[0].name}"\nĐường dẫn: ${data.projects[0].path}`, "ok");
+      } else {
+        showStatus("rvRenderStatus", "⚠️ Không tìm thấy Project CapCut nào trong thư mục mặc định.", "err");
+      }
+    });
+
+    document.getElementById("btnPickTrFile").addEventListener("click", async () => {
+      const data = await pickFileDialog({
+        title: "Chọn File Phụ đề cần dịch (.srt, .txt)",
+        filter: "Subtitle/Text Files (*.srt;*.txt)|*.srt;*.txt|All Files (*.*)|*.*",
+        readText: true
+      });
+      if (data.ok && !data.canceled && data.content) {
+        document.getElementById("trInputText").value = data.content;
+      }
+    });
+
+    document.getElementById("btnPickPrFile").addEventListener("click", async () => {
+      const data = await pickFileDialog({
+        title: "Chọn File Kịch bản / Phụ đề (.srt, .txt)",
+        filter: "Subtitle/Text Files (*.srt;*.txt)|*.srt;*.txt|All Files (*.*)|*.*",
+        readText: true
+      });
+      if (data.ok && !data.canceled && data.content) {
+        document.getElementById("prInputText").value = data.content;
+      }
+    });
+
+    function usToTimeStr(us) {
+      const totalSec = Math.max(0, Math.round((Number(us) || 0) / 1000000));
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    function showStatus(elId, msg, type = "") {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.style.display = "block";
+      el.className = `status-box ${type}`;
+      el.textContent = msg;
+    }
+
+    // ========================================================================
+    // 1. CHUYỂN TAB & THEME (MẶC ĐỊNH CHỌN DARK)
+    // ========================================================================
+    document.querySelectorAll(".nav-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-tab").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".tab-pane").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    const displayThemeSelect = document.getElementById("displayThemeSelect");
+    displayThemeSelect.value = "dark";
+    document.documentElement.setAttribute("data-theme", "dark");
+    displayThemeSelect.addEventListener("change", () => {
+      document.documentElement.setAttribute("data-theme", displayThemeSelect.value);
+    });
+
+    document.getElementById("rvStyle").addEventListener("change", (e) => {
+      document.getElementById("rvCustomStyleWrap").style.display =
+        e.target.value === "tu-viet" ? "block" : "none";
+    });
+
+    document.getElementById("rvExportMode").addEventListener("change", (e) => {
+      const mode = e.target.value;
+      document.getElementById("rvCapcutDraftWrap").style.display =
+        mode === "capcut-draft" || mode === "both" ? "flex" : "none";
+    });
+
+    // Hiệu ứng lún xuống cho nút [Render]
+    const btnRenderMain = document.getElementById("btnRenderMain");
+    btnRenderMain.addEventListener("mousedown", () => btnRenderMain.classList.add("is-pressed"));
+    window.addEventListener("mouseup", () => btnRenderMain.classList.remove("is-pressed"));
+
+    // ========================================================================
+    // 2. QUẢN LÝ CÀI ĐẶT AI API (CKEY.VN / CODEX / CUSTOM)
+    // ========================================================================
+    async function loadAiConfig() {
+      try {
+        const res = await fetch("/api/ai/settings");
+        const data = await res.json();
+        if (data.ok) {
+          state.aiSettings = data.settings;
+          renderProviderConfigUI();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderProviderConfigUI() {
+      const st = state.aiSettings;
+      if (!st || !st.providers) return;
+
+      const select = document.getElementById("apiProviderSelect");
+      select.innerHTML = "";
+      for (const p of Object.values(st.providers)) {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = `${p.name} (${p.baseUrl})`;
+        if (p.id === st.activeProviderId) opt.selected = true;
+        select.appendChild(opt);
+      }
+
+      const activeP = st.providers[st.activeProviderId] || Object.values(st.providers)[0];
+      if (!activeP) return;
+
+      document.getElementById("apiProviderName").value = activeP.name || "";
+      document.getElementById("apiBaseUrl").value = activeP.baseUrl || "https://api.xah.io/v1";
+      document.getElementById("apiKeyInput").value = activeP.apiKey || "";
+      document.getElementById("apiModelInput").value = st.activeModel || activeP.defaultModel || "deepseek-v4.1-flash";
+      document.getElementById("apiReasoningEffort").value = activeP.reasoningEffort || "";
+
+      const datalist = document.getElementById("apiModelDatalist");
+      datalist.innerHTML = "";
+      (activeP.models || [activeP.defaultModel]).forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        datalist.appendChild(opt);
+      });
+
+      document.getElementById("activeProviderText").textContent =
+        `${activeP.name.split("(")[0].trim()} • ${st.activeModel || activeP.defaultModel}`;
+    }
+
+    document.getElementById("apiProviderSelect").addEventListener("change", (e) => {
+      const id = e.target.value;
+      const p = state.aiSettings.providers[id];
+      if (!p) return;
+      state.aiSettings.activeProviderId = id;
+      state.aiSettings.activeModel = p.defaultModel;
+      renderProviderConfigUI();
+    });
+
+    document.getElementById("btnSaveApiSettings").addEventListener("click", async () => {
+      const providerId = document.getElementById("apiProviderSelect").value;
+      const model = document.getElementById("apiModelInput").value.trim();
+      const payload = {
+        activeProviderId: providerId,
+        activeModel: model,
+        provider: {
+          id: providerId,
+          name: document.getElementById("apiProviderName").value.trim(),
+          baseUrl: document.getElementById("apiBaseUrl").value.trim(),
+          apiKey: document.getElementById("apiKeyInput").value.trim(),
+          defaultModel: model,
+          reasoningEffort: document.getElementById("apiReasoningEffort").value
+        }
+      };
+
+      const res = await fetch("/api/ai/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.ok) {
+        state.aiSettings = data.settings;
+        renderProviderConfigUI();
+        showStatus("apiStatusBox", `✅ ${data.message}`, "ok");
+      } else {
+        showStatus("apiStatusBox", `❌ ${data.error}`, "err");
+      }
+    });
+
+    document.getElementById("btnImportCodex").addEventListener("click", async () => {
+      showStatus("apiStatusBox", "⏳ Đang đọc cấu hình ~/.codex/config.toml & ~/.codex/auth.json...", "");
+      const res = await fetch("/api/ai/import-codex", { method: "POST" });
+      const data = await res.json();
+      if (data.settings) {
+        state.aiSettings = data.settings;
+        renderProviderConfigUI();
+      }
+      showStatus("apiStatusBox", (data.ok ? "✅ " : "⚠️ ") + data.message, data.ok ? "ok" : "err");
+    });
+
+    document.getElementById("btnFetchModels").addEventListener("click", async () => {
+      const providerId = document.getElementById("apiProviderSelect").value;
+      const baseUrl = document.getElementById("apiBaseUrl").value.trim();
+      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      showStatus("apiStatusBox", "⏳ Đang tải danh sách Model từ endpoint /v1/models...", "");
+      const res = await fetch("/api/ai/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerId, baseUrl, apiKey })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        state.aiSettings = data.settings;
+        renderProviderConfigUI();
+        showStatus("apiStatusBox", `✅ Đã tìm thấy ${data.models.length} models: ${data.models.slice(0, 12).join(", ")}`, "ok");
+      } else {
+        showStatus("apiStatusBox", `❌ ${data.error}`, "err");
+      }
+    });
+
+    document.getElementById("btnCheckApiKey").addEventListener("click", async () => {
+      const providerId = document.getElementById("apiProviderSelect").value;
+      const model = document.getElementById("apiModelInput").value.trim();
+      const baseUrl = document.getElementById("apiBaseUrl").value.trim();
+      const apiKey = document.getElementById("apiKeyInput").value.trim();
+      showStatus("apiStatusBox", `⏳ Đang kiểm tra kết nối tới "${model}"...`, "");
+      const res = await fetch("/api/ai/check-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerId, model, baseUrl, apiKey })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showStatus("apiStatusBox", `✅ ${data.message}\nPhản hồi mẫu: "${data.reply}"`, "ok");
+      } else {
+        showStatus("apiStatusBox", `❌ ${data.error}`, "err");
+      }
+    });
+
+    document.getElementById("btnAddCustomProvider").addEventListener("click", async () => {
+      const payload = {
+        id: document.getElementById("newProvId").value.trim() || `custom-${Date.now()}`,
+        name: document.getElementById("newProvName").value.trim() || "Custom AI Provider",
+        baseUrl: document.getElementById("newProvBaseUrl").value.trim(),
+        defaultModel: document.getElementById("newProvModel").value.trim(),
+        apiKey: document.getElementById("newProvKey").value.trim(),
+        reasoningEffort: "xhigh"
+      };
+      const res = await fetch("/api/ai/add-provider", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.ok) {
+        state.aiSettings = data.settings;
+        renderProviderConfigUI();
+        showStatus("apiStatusBox", `✅ ${data.message}`, "ok");
+      } else {
+        showStatus("apiStatusBox", `❌ ${data.error}`, "err");
+      }
+    });
+
+    // ========================================================================
+    // 3. TAB REVIEW PHIM AI & BEAM-SEARCH AUTO-CUT
+    // ========================================================================
+    function renderCueMappingList() {
+      const box = document.getElementById("rvCueMappingList");
+      const badge = document.getElementById("rvCueCountBadge");
+      badge.textContent = `${state.scriptCues.length} câu`;
+
+      if (!state.scriptCues.length) {
+        box.innerHTML = `<div style="padding:18px;text-align:center;color:var(--text-muted);font-size:13px;">Chưa có câu kịch bản nào.</div>`;
+        return;
+      }
+
+      box.innerHTML = state.scriptCues
+        .map((c, idx) => {
+          const st = c.status || "kept";
+          const tagCls = st === "new" ? "tag-new" : st === "edited" ? "tag-edited" : "tag-kept";
+          const tagLabel = st === "new" ? "MỚI" : st === "edited" ? "ĐÃ SỬA" : "KHỚP";
+          return `<div class="cue-item">
+            <span style="color:var(--text-muted);font-weight:700;">#${idx + 1}</span>
+            <span style="font-family:monospace;color:var(--accent-2);">${usToTimeStr(c.startUs)} → ${usToTimeStr(c.endUs)}</span>
+            <span class="tag ${tagCls}">${tagLabel}</span>
+            <span>${c.text}</span>
+          </div>`;
+        })
+        .join("");
+    }
+
+    document.getElementById("btnAnalyzeVideo").addEventListener("click", async () => {
+      const videoPath = document.getElementById("rvVideoPath").value.trim();
+      const srtPath = document.getElementById("rvSrtPath").value.trim();
+      const srtContent = document.getElementById("rvSrtContent").value.trim();
+      const sceneThreshold = Number(document.getElementById("rvSceneThresh").value) || 0.3;
+      const hookSec = Number(document.getElementById("rvHookSec").value) || 15;
+      const noSpoiler = document.getElementById("rvNoSpoiler").checked;
+
+      showStatus("rvAnalyzeStatus", "⏳ Đang chạy FFmpeg phân tích điểm cắt camera (shots), âm lượng (RMS) & dò Cao trào...", "");
+      const res = await fetch("/api/review/analyze-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoPath, srtPath, srtContent, sceneThreshold, hookSec, noSpoiler })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        state.videoInfo = data.videoInfo;
+        state.shots = data.shots || [];
+        state.highlights = data.highlights || [];
+        state.hookClips = data.hookClips || [];
+        state.srtCues = data.srtCues || [];
+
+        showStatus(
+          "rvAnalyzeStatus",
+          `✅ Phân tích hoàn tất ${data.fromCache ? "(từ Cache siêu tốc)" : ""}!\n` +
+          `• Độ phân giải: ${data.videoInfo.width}x${data.videoInfo.height} @ ${data.videoInfo.timebase}fps (${usToTimeStr(data.videoInfo.durationUs)})\n` +
+          `• Điểm cắt góc máy (FFmpeg Shots): ${data.shotsCount} điểm\n` +
+          `• Phụ đề gốc: ${data.srtCount} dòng | Phân đoạn Cao trào (Robust Z-Score): ${data.highlights.length} đoạn | Hook mở đầu: ${data.hookClips.length} clip`,
+          "ok"
+        );
+      } else {
+        showStatus("rvAnalyzeStatus", `❌ ${data.error}`, "err");
+      }
+    });
+
+    document.getElementById("btnGenerateScript").addEventListener("click", async () => {
+      const srtPath = document.getElementById("rvSrtPath").value.trim();
+      const srtContent = document.getElementById("rvSrtContent").value.trim();
+      const style = document.getElementById("rvStyle").value;
+      const customStyle = document.getElementById("rvCustomStyle").value.trim();
+      const targetMinutes = Number(document.getElementById("rvTargetMin").value) || 6;
+      const lang = document.getElementById("rvLang").value;
+      const funNames = document.getElementById("rvFunNames").checked;
+
+      showStatus("rvScriptStatus", "⏳ AI đang thực thi Pipeline 4 Bước (Lập dàn ý Beat -> Phân loại Nhân vật -> Viết lời bình theo trọng số -> Chẻ câu dài)...", "");
+      const res = await fetch("/api/review/generate-script", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          srtCues: state.srtCues,
+          srtPath,
+          srtContent,
+          highlights: state.highlights,
+          targetMinutes,
+          lang,
+          style,
+          customStyle,
+          funNames
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        state.scriptCues = data.cues || [];
+        document.getElementById("rvScriptEditor").value = state.scriptCues.map((c) => c.text).join("\n");
+        renderCueMappingList();
+        showStatus(
+          "rvScriptStatus",
+          `✅ Đã viết xong ${data.totalSentences} câu lời bình (${data.totalWords} đơn vị từ)!\n` +
+          `• Tóm tắt phim: ${data.outline && data.outline.summary ? data.outline.summary : "Đã ánh xạ đầy đủ mốc thời gian."}`,
+          "ok"
+        );
+      } else {
+        showStatus("rvScriptStatus", `❌ ${data.error}`, "err");
+      }
+    });
+
+    document.getElementById("btnRemapDp").addEventListener("click", async () => {
+      const editedText = document.getElementById("rvScriptEditor").value.trim();
+      if (!editedText) return;
+      const editedLines = editedText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+      // Nếu chưa có scriptCues gốc, khởi tạo khoảng đều theo thời lượng phim
+      let baseCues = state.scriptCues;
+      if (!baseCues.length) {
+        const totalDur = (state.videoInfo && state.videoInfo.durationUs) || 3600000000;
+        const step = Math.floor(totalDur / Math.max(1, editedLines.length));
+        baseCues = editedLines.map((text, idx) => ({
+          index: idx + 1,
+          text,
+          startUs: idx * step,
+          endUs: (idx + 1) * step
+        }));
+      }
+
+      const res = await fetch("/api/review/remap-script", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldCues: baseCues, editedLines })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        state.scriptCues = data.cues;
+        renderCueMappingList();
+      }
+    });
+
+    // Nút bấm [Render] thực thi Beam-Search & Xuất Premiere Pro XML / CapCut Draft
+    btnRenderMain.addEventListener("click", async () => {
+      btnRenderMain.classList.add("is-pressed");
+      setTimeout(() => btnRenderMain.classList.remove("is-pressed"), 220);
+
+      const editedText = document.getElementById("rvScriptEditor").value.trim();
+      const editedLines = editedText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+      if (!editedLines.length) {
+        showStatus("rvRenderStatus", "❌ Vui lòng tạo hoặc nhập kịch bản lời bình trước khi bấm [Render].", "err");
+        return;
+      }
+
+      // Tự động chạy Quy hoạch động khớp thời gian mới nhất trước khi Render
+      let baseCues = state.scriptCues;
+      if (!baseCues.length) {
+        const totalDur = (state.videoInfo && state.videoInfo.durationUs) || 1800000000;
+        const step = Math.floor(totalDur / Math.max(1, editedLines.length));
+        baseCues = editedLines.map((text, idx) => ({
+          index: idx + 1,
+          text,
+          startUs: idx * step,
+          endUs: (idx + 1) * step
+        }));
+      }
+
+      const remapRes = await fetch("/api/review/remap-script", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldCues: baseCues, editedLines })
+      });
+      const remapData = await remapRes.json();
+      if (remapData.ok) {
+        state.scriptCues = remapData.cues;
+        renderCueMappingList();
+      }
+
+      showStatus("rvRenderStatus", "⏳ Đang chạy giải thuật Beam-Search (beamWidth = 48) cắt cảnh chống nháy hình & kết xuất dự án...", "");
+
+      const payload = {
+        videoPath: document.getElementById("rvVideoPath").value.trim(),
+        videoInfo: state.videoInfo,
+        cues: state.scriptCues,
+        shots: state.shots,
+        highlights: state.highlights,
+        hookClips: state.hookClips,
+        includeHook: document.getElementById("rvIncludeHook").checked,
+        voiceAudioPath: document.getElementById("rvVoiceAudioPath").value.trim(),
+        voiceSrtPath: document.getElementById("rvVoiceSrtPath").value.trim(),
+        exportMode: document.getElementById("rvExportMode").value,
+        outputXmlPath: document.getElementById("rvOutputXmlPath").value.trim(),
+        capcutDraftPath: document.getElementById("rvCapcutDraftPath").value.trim(),
+        options: {
+          cutSecMin: Number(document.getElementById("rvCutMin").value) || 2.0,
+          cutSecMax: Number(document.getElementById("rvCutMax").value) || 3.0,
+          minCutsPerCue: Number(document.getElementById("rvMinCuts").value) || 2,
+          maxCutsPerCue: Number(document.getElementById("rvMaxCuts").value) || 3,
+          maxClipSec: Number(document.getElementById("rvMaxClip").value) || 6.0,
+          minJumpSec: Number(document.getElementById("rvMinJump").value) || 2.0,
+          gapSec: Number(document.getElementById("rvGapSec").value) || 0.12,
+          zoom: Number(document.getElementById("rvZoom").value) || 1.08,
+          originalVolume: Number(document.getElementById("rvOrigVol").value) || 15,
+          muteOriginal: Number(document.getElementById("rvOrigVol").value) <= 0,
+          flip: document.getElementById("rvFlip").checked
+        }
+      };
+
+      const res = await fetch("/api/review/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.ok) {
+        const st = data.timelineResult.stats;
+        const out = data.outputs || {};
+        let msg = `✅ RENDER THÀNH CÔNG!\n` +
+          `• Tổng số mảnh cắt: ${st.totalPieces} mảnh (Trung bình ${st.avgCutsPerCue} mảnh/câu | Hook: ${st.hookPieces} mảnh)\n` +
+          `• Thời lượng Timeline: ${st.totalTimelineSec}s | Tỷ lệ dùng phim gốc: ${st.usedMovieRatioPct}%\n`;
+        if (out.premiereXmlPath) {
+          state.lastOutputXmlPath = out.premiereXmlPath;
+          msg += `🎬 File Premiere Pro XML (100% Online Media): ${out.premiereXmlPath}\n`;
+          msg += `📝 File Phụ đề Master SRT: ${out.masterSrtPath}`;
+        }
+        if (out.capcutDraft) {
+          msg += `\n✂️ Đã cập nhật CapCut Project: ${out.capcutDraft.draftJsonPath}`;
+        }
+        showStatus("rvRenderStatus", msg, "ok");
+
+        document.getElementById("rvPiecesSummary").textContent =
+          `${st.totalPieces} mảnh cắt • ${st.totalTimelineSec}s`;
+
+        const pBox = document.getElementById("rvPiecesList");
+        pBox.innerHTML = (data.timelineResult.pieces || [])
+          .slice(0, 200)
+          .map((p, idx) => {
+            const label = p.isHook ? `<span class="tag tag-hook">HOOK</span>` : `<span class="tag tag-kept">Câu #${p.cueNumber}</span>`;
+            return `<div class="cue-item">
+              <span style="color:var(--text-muted);">#${idx + 1}</span>
+              <span style="font-family:monospace;">TL: ${(p.dstStart / 1e6).toFixed(1)}s → ${((p.dstStart + p.dstDur) / 1e6).toFixed(1)}s</span>
+              ${label}
+              <span style="font-family:monospace;color:var(--text-secondary);">Gốc: ${usToTimeStr(p.srcStart)} (${(p.srcDur / 1e6).toFixed(2)}s) • Tốc độ: <b>${p.speed}x</b></span>
+            </div>`;
+          })
+          .join("");
+      } else {
+        showStatus("rvRenderStatus", `❌ ${data.error}`, "err");
+      }
+    });
+
+    // ========================================================================
+    // 4. TAB DỊCH PHỤ ĐỀ & TẠO PROMPT
+    // ========================================================================
+    document.getElementById("btnRunTranslate").addEventListener("click", async () => {
+      const input = document.getElementById("trInputText").value.trim();
+      const targetLang = document.getElementById("trTargetLang").value.trim();
+      const styleNote = document.getElementById("trStyleNote").value.trim();
+      const chunkSize = Number(document.getElementById("trChunkSize").value) || 45;
+      if (!input) return;
+
+      showStatus("trStatusBox", "⏳ Đang gọi AI dịch phụ đề giữ nguyên số dòng & thời gian...", "");
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input, targetLang, styleNote, chunkSize })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById("trOutputText").value = data.srt;
+        showStatus("trStatusBox", `✅ Đã dịch hoàn tất ${data.totalLines} dòng phụ đề!`, "ok");
+      } else {
+        showStatus("trStatusBox", `❌ ${data.error}`, "err");
+      }
+    });
+
+    document.getElementById("btnRunPrompts").addEventListener("click", async () => {
+      const input = document.getElementById("prInputText").value.trim();
+      const visualStyle = document.getElementById("prVisualStyle").value.trim();
+      if (!input) return;
+
+      showStatus("prStatusBox", "⏳ Đang gọi AI tạo Prompt hình ảnh/video cho từng dòng...", "");
+      const res = await fetch("/api/prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input, visualStyle })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById("prOutputText").value = (data.cues || [])
+          .map((c) => `[#${c.index}] ${c.prompt}`)
+          .join("\n\n");
+        showStatus("prStatusBox", `✅ Đã tạo thành công ${data.totalLines} Prompt hình ảnh!`, "ok");
+      } else {
+        showStatus("prStatusBox", `❌ ${data.error}`, "err");
+      }
+    });
+
+    // Khởi tạo dữ liệu khi mở trang
+    loadAiConfig();
+  </script>
+</body>
+</html>
