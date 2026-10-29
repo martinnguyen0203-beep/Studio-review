@@ -234,48 +234,39 @@ function runPowerShellPickerFallback(mode, title, filter, initialDir) {
       psScript = `
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
-$top = New-Object System.Windows.Forms.Form
-$top.TopMost = $true
 $d = New-Object System.Windows.Forms.FolderBrowserDialog
 $d.Description = '${safeTitle}'
 $d.ShowNewFolderButton = $true
 ${safeDir ? `$d.SelectedPath = '${safeDir}'` : ""}
-if ($d.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) {
+if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
   [System.IO.File]::WriteAllText('${safeOut}', $d.SelectedPath, [System.Text.Encoding]::UTF8)
 }
-$top.Dispose()
 `;
     } else if (mode === "save") {
       psScript = `
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
-$top = New-Object System.Windows.Forms.Form
-$top.TopMost = $true
 $f = New-Object System.Windows.Forms.SaveFileDialog
 $f.Title = '${safeTitle}'
 $f.Filter = '${safeFilter}'
 $f.RestoreDirectory = $true
 ${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
-if ($f.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) {
+if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
   [System.IO.File]::WriteAllText('${safeOut}', $f.FileName, [System.Text.Encoding]::UTF8)
 }
-$top.Dispose()
 `;
     } else {
       psScript = `
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Add-Type -AssemblyName System.Windows.Forms
-$top = New-Object System.Windows.Forms.Form
-$top.TopMost = $true
 $f = New-Object System.Windows.Forms.OpenFileDialog
 $f.Title = '${safeTitle}'
 $f.Filter = '${safeFilter}'
 $f.RestoreDirectory = $true
 ${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
-if ($f.ShowDialog($top) -eq [System.Windows.Forms.DialogResult]::OK) {
+if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
   [System.IO.File]::WriteAllText('${safeOut}', $f.FileName, [System.Text.Encoding]::UTF8)
 }
-$top.Dispose()
 `;
     }
 
@@ -285,7 +276,13 @@ $top.Dispose()
       ["-NoProfile", "-Sta", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
       { windowsHide: false }
     );
+    const killTimer = setTimeout(() => {
+      try { child.kill(); } catch (_) {}
+      resolve({ ok: true, canceled: true, path: "" });
+    }, 60000);
+
     child.on("close", () => {
+      clearTimeout(killTimer);
       let picked = "";
       if (fs.existsSync(tempOut)) {
         try {

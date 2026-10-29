@@ -1032,32 +1032,64 @@
       });
     }
 
+    function openBrowserFolderPicker() {
+      return new Promise((resolve) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.webkitdirectory = true;
+        input.directory = true;
+        input.style.display = "none";
+        document.body.appendChild(input);
+
+        input.onchange = async (e) => {
+          const files = e.target.files;
+          if (!files || !files.length) {
+            document.body.removeChild(input);
+            return resolve({ ok: true, canceled: true, path: "" });
+          }
+          const sample = files[0];
+          let folderName = sample.webkitRelativePath ? sample.webkitRelativePath.split("/")[0] : "";
+          let fullPath = folderName;
+          try {
+            const res = await fetch("/api/dialog/find-file", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fileName: folderName })
+            });
+            const d = await res.json();
+            if (d.ok && d.found && d.path) {
+              fullPath = d.path;
+            }
+          } catch (_) {}
+          document.body.removeChild(input);
+          resolve({ ok: true, canceled: false, path: fullPath });
+        };
+
+        window.addEventListener("focus", () => {
+          setTimeout(() => {
+            if (document.body.contains(input) && (!input.files || !input.files.length)) {
+              document.body.removeChild(input);
+              resolve({ ok: true, canceled: true, path: "" });
+            }
+          }, 800);
+        }, { once: true });
+
+        input.click();
+      });
+    }
+
     async function pickFileDialog({ title, filter, initialDir = "", readText = false, btnEl = null }) {
       const origText = btnEl ? btnEl.innerText : "";
       if (btnEl) btnEl.innerText = "⏳ Đang mở...";
       try {
-        const res = await fetch("/api/dialog/pick-file", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, filter, initialDir, readText })
-        });
-        const data = await res.json();
-        if (data.ok && !data.canceled && data.path) {
-          return data;
-        }
-        if (data.ok && data.canceled) {
-          return data;
-        }
-        if (data.ok === false) {
-          toast("Lỗi hộp thoại chọn file: " + (data.error || "không rõ nguyên nhân"), "err");
-        }
+        const res = await openBrowserFilePicker({ filter, readText });
+        return res;
       } catch (err) {
-        toast("Không gọi được API chọn file: " + err.message, "err");
-      }
-      finally {
+        toast("Lỗi chọn file: " + err.message, "err");
+        return { ok: false, canceled: true, path: "" };
+      } finally {
         if (btnEl) btnEl.innerText = origText;
       }
-      return await openBrowserFilePicker({ filter, readText });
     }
 
     document.getElementById("btnPickVideo").addEventListener("click", async (e) => {
@@ -1222,12 +1254,7 @@
     });
 
     document.getElementById("btnPickCapcutFolder").addEventListener("click", async () => {
-      const res = await fetch("/api/dialog/pick-folder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: "Chọn thư mục Project CapCut (chứa draft_content.json)" })
-      });
-      const data = await res.json();
+      const data = await openBrowserFolderPicker();
       if (data.ok && !data.canceled && data.path) {
         document.getElementById("rvCapcutDraftPath").value = data.path;
       }
