@@ -983,13 +983,25 @@
         input.style.display = "none";
         document.body.appendChild(input);
 
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
           const file = e.target.files && e.target.files[0];
           if (!file) {
             document.body.removeChild(input);
             return resolve({ ok: true, canceled: true });
           }
-          const fullPath = file.path || file.name;
+          let fullPath = file.path || file.name;
+          try {
+            const fRes = await fetch("/api/dialog/find-file", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fileName: file.name })
+            });
+            const fData = await fRes.json();
+            if (fData.ok && fData.found && fData.path) {
+              fullPath = fData.path;
+            }
+          } catch (_) {}
+
           if (readText) {
             const reader = new FileReader();
             reader.onload = (re) => {
@@ -1013,7 +1025,7 @@
               document.body.removeChild(input);
               resolve({ ok: true, canceled: true });
             }
-          }, 600);
+          }, 800);
         }, { once: true });
 
         input.click();
@@ -1022,17 +1034,16 @@
 
     async function pickFileDialog({ title, filter, initialDir = "", readText = false }) {
       try {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 1400);
         const res = await fetch("/api/dialog/pick-file", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, filter, initialDir, readText }),
-          signal: ctrl.signal
+          body: JSON.stringify({ title, filter, initialDir, readText })
         });
-        clearTimeout(timer);
         const data = await res.json();
         if (data.ok && !data.canceled && data.path) {
+          return data;
+        }
+        if (data.ok && data.canceled) {
           return data;
         }
       } catch (_) {}
@@ -1048,12 +1059,83 @@
       });
       if (data.ok && !data.canceled && data.path) {
         document.getElementById("rvVideoPath").value = data.path;
+
+        // Tự động tìm phụ đề .srt tương ứng trong cùng thư mục
+        try {
+          const mRes = await fetch("/api/dialog/auto-match-srt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ videoPath: data.path })
+          });
+          const mData = await mRes.json();
+          if (mData.ok && mData.found && mData.srtPath) {
+            document.getElementById("rvSrtPath").value = mData.srtPath;
+            if (mData.srtContent && !document.getElementById("rvSrtContent").value.trim()) {
+              document.getElementById("rvSrtContent").value = mData.srtContent;
+            }
+            showStatus("rvAnalyzeStatus", `💡 Đã tự động nhận diện phụ đề tiếng Việt cùng thư mục:\n${mData.srtPath}`, "ok");
+          }
+        } catch (_) {}
+
         // Tự động gợi ý đường dẫn lưu file Premiere XML cùng thư mục nếu đang trống
         const outXmlEl = document.getElementById("rvOutputXmlPath");
         if (!outXmlEl.value.trim()) {
           outXmlEl.value = data.path.replace(/\.[^.\\/]+$/, "_Premiere.xml");
         }
       }
+    });
+
+    // Tự động giải quyết đường dẫn đầy đủ khi người dùng gõ / dán tên file
+    document.getElementById("rvVideoPath").addEventListener("blur", async (e) => {
+      const val = e.target.value.trim();
+      if (!val) return;
+      try {
+        const res = await fetch("/api/dialog/find-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName: val })
+        });
+        const data = await res.json();
+        if (data.ok && data.found && data.path) {
+          e.target.value = data.path;
+          const outXmlEl = document.getElementById("rvOutputXmlPath");
+          if (!outXmlEl.value.trim()) {
+            outXmlEl.value = data.path.replace(/\.[^.\\/]+$/, "_Premiere.xml");
+          }
+          if (!document.getElementById("rvSrtPath").value.trim()) {
+            const mRes = await fetch("/api/dialog/auto-match-srt", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ videoPath: data.path })
+            });
+            const mData = await mRes.json();
+            if (mData.ok && mData.found && mData.srtPath) {
+              document.getElementById("rvSrtPath").value = mData.srtPath;
+              if (mData.srtContent && !document.getElementById("rvSrtContent").value.trim()) {
+                document.getElementById("rvSrtContent").value = mData.srtContent;
+              }
+              showStatus("rvAnalyzeStatus", `💡 Đã tự động nhận diện phụ đề tiếng Việt:\n${mData.srtPath}`, "ok");
+            }
+          }
+        }
+      } catch (_) {}
+    });
+
+    document.getElementById("rvSrtPath").addEventListener("blur", async (e) => {
+      const val = e.target.value.trim();
+      if (!val) return;
+      const vPath = document.getElementById("rvVideoPath").value.trim();
+      try {
+        const res = await fetch("/api/dialog/find-file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName: val, hintDir: vPath })
+        });
+        const data = await res.json();
+        if (data.ok && data.found && data.path) {
+          e.target.value = data.path;
+        }
+      } catch (_) {}
     });
 
     document.getElementById("btnPickSrt").addEventListener("click", async () => {

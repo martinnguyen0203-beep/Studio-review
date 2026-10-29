@@ -66,8 +66,216 @@ app.use(express.static(path.join(__dirname, "..", "public")));
 // 0. HỘP THOẠI CHỌN FILE / THƯ MỤC BẢN ĐỊA WINDOWS (NATIVE FILE/FOLDER PICKER)
 // ============================================================================
 
-function runPowerShellPicker(psScript) {
-  return new Promise((resolve, reject) => {
+const NATIVE_PICKER_EXE = path.join(__dirname, "..", "bin", "filepicker.exe");
+
+function normalizeFileCompareName(str) {
+  if (!str) return "";
+  return String(str).replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Tự động tìm đường dẫn thực tế của file trên các ổ đĩa nếu người dùng chỉ nhập tên file hoặc đường dẫn tương đối
+ */
+function resolveMediaPath(inputPath, hintDir = "") {
+  if (!inputPath || typeof inputPath !== "string") return "";
+  let clean = inputPath.trim().replace(/^["']|["']$/g, "");
+  if (!clean) return "";
+
+  // 1. Kiểm tra trực tiếp đường dẫn
+  if (fs.existsSync(clean)) return path.resolve(clean);
+  const resolved = path.resolve(clean);
+  if (fs.existsSync(resolved)) return resolved;
+
+  const baseName = path.basename(clean);
+  const normTarget = normalizeFileCompareName(baseName);
+
+  // 2. Nếu có thư mục gợi ý (ví dụ video nằm ở đâu thì tìm srt/voice ở đó trước)
+  if (hintDir && typeof hintDir === "string") {
+    let validHint = "";
+    try {
+      if (fs.existsSync(hintDir)) {
+        validHint = fs.statSync(hintDir).isDirectory() ? hintDir : path.dirname(hintDir);
+      } else {
+        const parent = path.dirname(hintDir);
+        if (fs.existsSync(parent)) validHint = parent;
+      }
+    } catch (_) {}
+
+    if (validHint) {
+      try {
+        const hintFiles = fs.readdirSync(validHint);
+        for (const f of hintFiles) {
+          if (normalizeFileCompareName(f) === normTarget) {
+            return path.resolve(path.join(validHint, f));
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  // 3. Quét các thư mục lưu trữ media phổ biến qua Breadth-First Search (BFS)
+  const searchRoots = [
+    "Y:/9 DOWNLOAD NETFLIX",
+    "D:/9 Raw",
+    "D:/12 Project Review Phim",
+    "E:/1 Huy/8 OBSIDIAN/auto edit",
+    "Z:/2 Review Phim",
+    "Y:/",
+    "E:/",
+    "Z:/",
+    "D:/",
+    "C:/Users/Admin/Downloads",
+    "C:/Users/Admin/Desktop",
+    "C:/Users/Admin/Videos",
+    "O:/"
+  ];
+
+  const skipDirs = new Set([
+    "node_modules", ".git", "$recycle.bin", "system volume information",
+    "windows", "appdata", "program files", "program files (x86)", ".fseventsd"
+  ]);
+
+  for (const root of searchRoots) {
+    if (!fs.existsSync(root)) continue;
+    const queue = [[root, 0]];
+    while (queue.length > 0) {
+      const [currentDir, depth] = queue.shift();
+      if (depth > 4) continue;
+      try {
+        const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isFile()) {
+            if (normalizeFileCompareName(entry.name) === normTarget) {
+              return path.resolve(path.join(currentDir, entry.name));
+            }
+          } else if (entry.isDirectory()) {
+            const lower = entry.name.toLowerCase();
+            if (!skipDirs.has(lower) && !entry.name.startsWith(".")) {
+              queue.push([path.join(currentDir, entry.name), depth + 1]);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  return resolved;
+}
+
+/**
+ * Tự động tìm file phụ đề .srt tương ứng trong cùng thư mục với video
+ */
+function findMatchingSrt(videoPath) {
+  if (!videoPath) return null;
+  const resolvedVideo = resolveMediaPath(videoPath);
+  if (!resolvedVideo || !fs.existsSync(resolvedVideo)) return null;
+
+  const vDir = path.dirname(resolvedVideo);
+  const vBase = path.parse(resolvedVideo).name;
+  const normVBase = normalizeFileCompareName(vBase);
+
+  try {
+    const files = fs.readdirSync(vDir);
+    const srtCandidates = files.filter((f) => f.toLowerCase().endsWith(".srt"));
+    if (!srtCandidates.length) return null;
+
+    let best = srtCandidates.find((f) => {
+      const nf = normalizeFileCompareName(f);
+      return nf.includes(normVBase) && (nf.includes("_vi") || nf.includes("vi_") || nf.includes("viet"));
+    });
+
+    if (!best) {
+      best = srtCandidates.find((f) => normalizeFileCompareName(f).includes(normVBase));
+    }
+
+    if (!best) {
+      best = srtCandidates.find((f) => {
+        const nf = normalizeFileCompareName(f);
+        return nf.includes("_vi") || nf.includes("vi_") || nf.includes("viet");
+      });
+    }
+
+    if (!best && srtCandidates.length === 1) {
+      best = srtCandidates[0];
+    }
+
+    if (best) {
+      const fullSrt = path.resolve(path.join(vDir, best));
+      return {
+        path: fullSrt,
+        content: fs.readFileSync(fullSrt, "utf8")
+      };
+    }
+  } catch (_) {}
+  return null;
+}
+
+function runNativePicker(mode, title, filter, initialDir) {
+  return new Promise((resolve) => {
+    if (fs.existsSync(NATIVE_PICKER_EXE)) {
+      const child = spawn(NATIVE_PICKER_EXE, [mode, title || "", filter || "", initialDir || ""], {
+        windowsHide: false
+      });
+      let stdout = "";
+      child.stdout.on("data", (d) => (stdout += d.toString("utf8")));
+      child.on("close", (code) => {
+        resolve(code === 0 ? stdout.trim() : "");
+      });
+      child.on("error", () => {
+        runPowerShellPickerFallback(mode, title, filter, initialDir).then(resolve);
+      });
+      return;
+    }
+    runPowerShellPickerFallback(mode, title, filter, initialDir).then(resolve);
+  });
+}
+
+function runPowerShellPickerFallback(mode, title, filter, initialDir) {
+  return new Promise((resolve) => {
+    const safeTitle = String(title || "").replace(/'/g, "''");
+    const safeFilter = String(filter || "").replace(/'/g, "''");
+    const safeDir = initialDir && fs.existsSync(initialDir)
+      ? String(fs.statSync(initialDir).isDirectory() ? initialDir : path.dirname(initialDir)).replace(/'/g, "''")
+      : "";
+
+    let psScript = "";
+    if (mode === "folder") {
+      psScript = `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Windows.Forms
+$d = New-Object System.Windows.Forms.FolderBrowserDialog
+$d.Description = '${safeTitle}'
+${safeDir ? `$d.SelectedPath = '${safeDir}'` : ""}
+if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+  Write-Output $d.SelectedPath
+}
+`;
+    } else if (mode === "save") {
+      psScript = `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Windows.Forms
+$f = New-Object System.Windows.Forms.SaveFileDialog
+$f.Title = '${safeTitle}'
+$f.Filter = '${safeFilter}'
+${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
+if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+  Write-Output $f.FileName
+}
+`;
+    } else {
+      psScript = `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type -AssemblyName System.Windows.Forms
+$f = New-Object System.Windows.Forms.OpenFileDialog
+$f.Title = '${safeTitle}'
+$f.Filter = '${safeFilter}'
+${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
+if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+  Write-Output $f.FileName
+}
+`;
+    }
+
     const encoded = Buffer.from(psScript, "utf16le").toString("base64");
     const child = spawn(
       "powershell.exe",
@@ -75,15 +283,39 @@ function runPowerShellPicker(psScript) {
       { windowsHide: false }
     );
     let stdout = "";
-    let stderr = "";
     child.stdout.on("data", (d) => (stdout += d.toString("utf8")));
-    child.stderr.on("data", (d) => (stderr += d.toString("utf8")));
-    child.on("error", reject);
     child.on("close", () => {
       resolve(stdout.trim());
     });
+    child.on("error", () => resolve(""));
   });
 }
+
+app.post("/api/dialog/find-file", (req, res) => {
+  try {
+    const { fileName, hintDir = "" } = req.body || {};
+    const foundPath = resolveMediaPath(fileName, hintDir);
+    if (foundPath && fs.existsSync(foundPath)) {
+      return res.json({ ok: true, found: true, path: foundPath });
+    }
+    res.json({ ok: true, found: false, path: "" });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post("/api/dialog/auto-match-srt", (req, res) => {
+  try {
+    const { videoPath } = req.body || {};
+    const match = findMatchingSrt(videoPath);
+    if (match) {
+      return res.json({ ok: true, found: true, srtPath: match.path, srtContent: match.content });
+    }
+    res.json({ ok: true, found: false });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 app.post("/api/dialog/pick-file", async (req, res) => {
   try {
@@ -94,30 +326,7 @@ app.post("/api/dialog/pick-file", async (req, res) => {
       readText = false
     } = req.body || {};
 
-    const safeTitle = String(title).replace(/'/g, "''");
-    const safeFilter = String(filter).replace(/'/g, "''");
-    const safeDir = initialDir && fs.existsSync(initialDir)
-      ? String(path.dirname(initialDir)).replace(/'/g, "''")
-      : "";
-
-    const ps = `
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-Add-Type -AssemblyName System.Windows.Forms
-$f = New-Object System.Windows.Forms.OpenFileDialog
-$f.Title = '${safeTitle}'
-$f.Filter = '${safeFilter}'
-${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
-$form = New-Object System.Windows.Forms.Form
-$form.TopMost = $true
-$form.Opacity = 0
-$form.ShowInTaskbar = $false
-$res = $f.ShowDialog($form)
-$form.Dispose()
-if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
-  Write-Output $f.FileName
-}
-`;
-    const pickedPath = await runPowerShellPicker(ps);
+    const pickedPath = await runNativePicker("file", title, filter, initialDir);
     if (!pickedPath) {
       return res.json({ ok: true, canceled: true, path: "" });
     }
@@ -141,28 +350,7 @@ app.post("/api/dialog/pick-save-file", async (req, res) => {
       defaultName = "Review_Premiere.xml"
     } = req.body || {};
 
-    const safeTitle = String(title).replace(/'/g, "''");
-    const safeFilter = String(filter).replace(/'/g, "''");
-    const safeName = String(defaultName).replace(/'/g, "''");
-
-    const ps = `
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-Add-Type -AssemblyName System.Windows.Forms
-$f = New-Object System.Windows.Forms.SaveFileDialog
-$f.Title = '${safeTitle}'
-$f.Filter = '${safeFilter}'
-$f.FileName = '${safeName}'
-$form = New-Object System.Windows.Forms.Form
-$form.TopMost = $true
-$form.Opacity = 0
-$form.ShowInTaskbar = $false
-$res = $f.ShowDialog($form)
-$form.Dispose()
-if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
-  Write-Output $f.FileName
-}
-`;
-    const pickedPath = await runPowerShellPicker(ps);
+    const pickedPath = await runNativePicker("save", title, filter, defaultName);
     if (!pickedPath) {
       return res.json({ ok: true, canceled: true, path: "" });
     }
@@ -175,25 +363,7 @@ if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
 app.post("/api/dialog/pick-folder", async (req, res) => {
   try {
     const { description = "Chọn thư mục" } = req.body || {};
-    const safeDesc = String(description).replace(/'/g, "''");
-
-    const ps = `
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-Add-Type -AssemblyName System.Windows.Forms
-$d = New-Object System.Windows.Forms.FolderBrowserDialog
-$d.Description = '${safeDesc}'
-$d.UseDescriptionForTitle = $true
-$form = New-Object System.Windows.Forms.Form
-$form.TopMost = $true
-$form.Opacity = 0
-$form.ShowInTaskbar = $false
-$res = $d.ShowDialog($form)
-$form.Dispose()
-if ($res -eq [System.Windows.Forms.DialogResult]::OK) {
-  Write-Output $d.SelectedPath
-}
-`;
-    const pickedPath = await runPowerShellPicker(ps);
+    const pickedPath = await runNativePicker("folder", description, "", "");
     if (!pickedPath) {
       return res.json({ ok: true, canceled: true, path: "" });
     }
@@ -390,13 +560,23 @@ app.post("/api/review/analyze-video", async (req, res) => {
       noSpoiler = true
     } = req.body || {};
 
+    const targetVideoPath = videoPath ? resolveMediaPath(videoPath) : "";
+    const targetSrtPath = srtPath
+      ? resolveMediaPath(srtPath, targetVideoPath ? path.dirname(targetVideoPath) : "")
+      : "";
+
     let rawSrt = String(srtContent || "");
-    if (!rawSrt && srtPath) {
-      const absSrt = path.resolve(String(srtPath));
-      if (!fs.existsSync(absSrt)) {
-        throw new Error(`Không tìm thấy file phụ đề gốc: ${absSrt}`);
+    if (!rawSrt && targetSrtPath) {
+      if (fs.existsSync(targetSrtPath)) {
+        rawSrt = fs.readFileSync(targetSrtPath, "utf8");
       }
-      rawSrt = fs.readFileSync(absSrt, "utf8");
+    }
+    // Nếu vẫn chưa có phụ đề và có video, tự động tìm file .srt cùng thư mục video
+    if (!rawSrt && targetVideoPath && fs.existsSync(targetVideoPath)) {
+      const autoSrt = findMatchingSrt(targetVideoPath);
+      if (autoSrt) {
+        rawSrt = autoSrt.content;
+      }
     }
 
     const srtCues = rawSrt ? parseSrt(rawSrt) : [];
@@ -410,15 +590,18 @@ app.post("/api/review/analyze-video", async (req, res) => {
         timebase: 24,
         ntsc: false,
         durationUs: srtCues.length ? srtCues[srtCues.length - 1].endUs + 10000000 : 3600000000,
-        path: videoPath || ""
+        path: targetVideoPath || ""
       },
       shots: [],
       rms: [],
       fromCache: false
     };
 
-    if (videoPath && String(videoPath).trim()) {
-      analysis = await detectShotsAndRms(videoPath, {
+    if (targetVideoPath) {
+      if (!fs.existsSync(targetVideoPath)) {
+        throw new Error(`Không tìm thấy file media: ${targetVideoPath}\n👉 Mẹo: Hãy bấm nút [📂 Chọn Video...] để chọn trực tiếp file từ cửa sổ Windows, hoặc copy đường dẫn đầy đủ từ File Explorer (ví dụ: D:\\Phim\\${path.basename(videoPath)})`);
+      }
+      analysis = await detectShotsAndRms(targetVideoPath, {
         sceneThreshold: Number(sceneThreshold) || 0.3,
         forceRefresh: Boolean(forceRefresh)
       });
@@ -553,13 +736,14 @@ app.post("/api/review/render", async (req, res) => {
       options = {}
     } = req.body || {};
 
+    const targetVideoPath = videoPath ? resolveMediaPath(videoPath) : "";
     let videoInfo = clientVideoInfo;
-    if ((!videoInfo || !videoInfo.durationUs) && videoPath && fs.existsSync(path.resolve(videoPath))) {
-      videoInfo = await probeVideo(videoPath);
+    if ((!videoInfo || !videoInfo.durationUs) && targetVideoPath && fs.existsSync(targetVideoPath)) {
+      videoInfo = await probeVideo(targetVideoPath);
     }
     if (!videoInfo) {
       videoInfo = {
-        path: videoPath || "D:/movie.mp4",
+        path: targetVideoPath || videoPath || "D:/movie.mp4",
         width: 1920,
         height: 1080,
         fps: 24,
@@ -567,14 +751,23 @@ app.post("/api/review/render", async (req, res) => {
         ntsc: false,
         durationUs: 3600000000
       };
+    } else if (targetVideoPath) {
+      videoInfo.path = targetVideoPath;
     }
+
+    const targetVoiceAudioPath = voiceAudioPath
+      ? resolveMediaPath(voiceAudioPath, targetVideoPath ? path.dirname(targetVideoPath) : "")
+      : "";
+    const targetVoiceSrtPath = voiceSrtPath
+      ? resolveMediaPath(voiceSrtPath, targetVideoPath ? path.dirname(targetVideoPath) : "")
+      : "";
 
     // Nếu người dùng truyền thêm file Voice SRT (từ V-Clone / TTS ngoài), lấy thời lượng đọc từ đó
     let voiceSrtCues = [];
     if (voiceSrtContent) {
       voiceSrtCues = parseSrt(voiceSrtContent);
-    } else if (voiceSrtPath && fs.existsSync(path.resolve(voiceSrtPath))) {
-      voiceSrtCues = parseSrt(fs.readFileSync(path.resolve(voiceSrtPath), "utf8"));
+    } else if (targetVoiceSrtPath && fs.existsSync(targetVoiceSrtPath)) {
+      voiceSrtCues = parseSrt(fs.readFileSync(targetVoiceSrtPath, "utf8"));
     }
 
     const preparedCues = (inputCues || []).map((c, idx) => {
@@ -643,7 +836,7 @@ app.post("/api/review/render", async (req, res) => {
     if (exportMode === "premiere-xml" || exportMode === "both") {
       const xmlContent = buildPremiereXml(timelineResult, videoInfo, {
         videoPath: videoInfo.path,
-        voiceAudioPath,
+        voiceAudioPath: targetVoiceAudioPath || voiceAudioPath,
         zoom: options.zoom != null ? Number(options.zoom) : 1.08,
         flip: options.flip !== false,
         muteOriginal: Boolean(options.muteOriginal),
