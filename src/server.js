@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 const { spawn } = require("child_process");
 const express = require("express");
 const cors = require("cors");
@@ -212,28 +213,55 @@ function findMatchingSrt(videoPath) {
 
 function runNativePicker(mode, title, filter, initialDir) {
   return new Promise((resolve) => {
+    const tempOut = path.join(
+      os.tmpdir(),
+      `picker_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`
+    );
+
+    const safeFilter = filter && filter.includes("|") ? filter : "All files (*.*)|*.*";
+
     if (fs.existsSync(NATIVE_PICKER_EXE)) {
-      const child = spawn(NATIVE_PICKER_EXE, [mode, title || "", filter || "", initialDir || ""], {
-        windowsHide: false
-      });
+      const child = spawn(
+        NATIVE_PICKER_EXE,
+        [mode, title || "", safeFilter, initialDir || "", tempOut],
+        { windowsHide: false }
+      );
       let stdout = "";
       child.stdout.on("data", (d) => (stdout += d.toString("utf8")));
       child.on("close", (code) => {
-        resolve(code === 0 ? stdout.trim() : "");
+        let picked = "";
+        if (fs.existsSync(tempOut)) {
+          try {
+            picked = fs.readFileSync(tempOut, "utf8").trim();
+            fs.unlinkSync(tempOut);
+          } catch (_) {}
+        }
+        if (!picked && code === 0 && stdout) {
+          picked = stdout.trim();
+        }
+        if (code === 0 || code === 1) {
+          return resolve({ ok: true, canceled: code === 1, path: picked });
+        }
+        runPowerShellPickerFallback(mode, title, safeFilter, initialDir).then(resolve);
       });
       child.on("error", () => {
-        runPowerShellPickerFallback(mode, title, filter, initialDir).then(resolve);
+        runPowerShellPickerFallback(mode, title, safeFilter, initialDir).then(resolve);
       });
       return;
     }
-    runPowerShellPickerFallback(mode, title, filter, initialDir).then(resolve);
+    runPowerShellPickerFallback(mode, title, safeFilter, initialDir).then(resolve);
   });
 }
 
 function runPowerShellPickerFallback(mode, title, filter, initialDir) {
   return new Promise((resolve) => {
+    const tempOut = path.join(
+      os.tmpdir(),
+      `picker_ps_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`
+    );
     const safeTitle = String(title || "").replace(/'/g, "''");
-    const safeFilter = String(filter || "").replace(/'/g, "''");
+    const safeFilter = String(filter && filter.includes("|") ? filter : "All files (*.*)|*.*").replace(/'/g, "''");
+    const safeOut = tempOut.replace(/'/g, "''");
     const safeDir = initialDir && fs.existsSync(initialDir)
       ? String(fs.statSync(initialDir).isDirectory() ? initialDir : path.dirname(initialDir)).replace(/'/g, "''")
       : "";
@@ -247,7 +275,7 @@ $d = New-Object System.Windows.Forms.FolderBrowserDialog
 $d.Description = '${safeTitle}'
 ${safeDir ? `$d.SelectedPath = '${safeDir}'` : ""}
 if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-  Write-Output $d.SelectedPath
+  [System.IO.File]::WriteAllText('${safeOut}', $d.SelectedPath, [System.Text.Encoding]::UTF8)
 }
 `;
     } else if (mode === "save") {
@@ -259,7 +287,7 @@ $f.Title = '${safeTitle}'
 $f.Filter = '${safeFilter}'
 ${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
 if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-  Write-Output $f.FileName
+  [System.IO.File]::WriteAllText('${safeOut}', $f.FileName, [System.Text.Encoding]::UTF8)
 }
 `;
     } else {
@@ -271,7 +299,7 @@ $f.Title = '${safeTitle}'
 $f.Filter = '${safeFilter}'
 ${safeDir ? `$f.InitialDirectory = '${safeDir}'` : ""}
 if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-  Write-Output $f.FileName
+  [System.IO.File]::WriteAllText('${safeOut}', $f.FileName, [System.Text.Encoding]::UTF8)
 }
 `;
     }
@@ -282,12 +310,17 @@ if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
       ["-NoProfile", "-Sta", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded],
       { windowsHide: false }
     );
-    let stdout = "";
-    child.stdout.on("data", (d) => (stdout += d.toString("utf8")));
     child.on("close", () => {
-      resolve(stdout.trim());
+      let picked = "";
+      if (fs.existsSync(tempOut)) {
+        try {
+          picked = fs.readFileSync(tempOut, "utf8").trim();
+          fs.unlinkSync(tempOut);
+        } catch (_) {}
+      }
+      resolve({ ok: true, canceled: !picked, path: picked });
     });
-    child.on("error", () => resolve(""));
+    child.on("error", () => resolve({ ok: false, canceled: true, path: "" }));
   });
 }
 
@@ -326,17 +359,17 @@ app.post("/api/dialog/pick-file", async (req, res) => {
       readText = false
     } = req.body || {};
 
-    const pickedPath = await runNativePicker("file", title, filter, initialDir);
-    if (!pickedPath) {
+    const result = await runNativePicker("file", title, filter, initialDir);
+    if (!result.path || result.canceled) {
       return res.json({ ok: true, canceled: true, path: "" });
     }
 
     let content = null;
-    if (readText && fs.existsSync(pickedPath)) {
-      content = fs.readFileSync(pickedPath, "utf8");
+    if (readText && fs.existsSync(result.path)) {
+      content = fs.readFileSync(result.path, "utf8");
     }
 
-    res.json({ ok: true, canceled: false, path: pickedPath, content });
+    res.json({ ok: true, canceled: false, path: result.path, content });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -350,11 +383,8 @@ app.post("/api/dialog/pick-save-file", async (req, res) => {
       defaultName = "Review_Premiere.xml"
     } = req.body || {};
 
-    const pickedPath = await runNativePicker("save", title, filter, defaultName);
-    if (!pickedPath) {
-      return res.json({ ok: true, canceled: true, path: "" });
-    }
-    res.json({ ok: true, canceled: false, path: pickedPath });
+    const result = await runNativePicker("save", title, filter, defaultName);
+    res.json({ ok: true, canceled: result.canceled, path: result.path || "" });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -362,12 +392,9 @@ app.post("/api/dialog/pick-save-file", async (req, res) => {
 
 app.post("/api/dialog/pick-folder", async (req, res) => {
   try {
-    const { description = "Chọn thư mục" } = req.body || {};
-    const pickedPath = await runNativePicker("folder", description, "", "");
-    if (!pickedPath) {
-      return res.json({ ok: true, canceled: true, path: "" });
-    }
-    res.json({ ok: true, canceled: false, path: pickedPath });
+    const { description = "Chọn thư mục", initialDir = "" } = req.body || {};
+    const result = await runNativePicker("folder", description, "", initialDir);
+    res.json({ ok: true, canceled: result.canceled, path: result.path || "" });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

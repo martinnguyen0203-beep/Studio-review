@@ -1032,7 +1032,9 @@
       });
     }
 
-    async function pickFileDialog({ title, filter, initialDir = "", readText = false }) {
+    async function pickFileDialog({ title, filter, initialDir = "", readText = false, btnEl = null }) {
+      const origText = btnEl ? btnEl.innerText : "";
+      if (btnEl) btnEl.innerText = "⏳ Đang mở...";
       try {
         const res = await fetch("/api/dialog/pick-file", {
           method: "POST",
@@ -1047,15 +1049,19 @@
           return data;
         }
       } catch (_) {}
+      finally {
+        if (btnEl) btnEl.innerText = origText;
+      }
       return await openBrowserFilePicker({ filter, readText });
     }
 
-    document.getElementById("btnPickVideo").addEventListener("click", async () => {
+    document.getElementById("btnPickVideo").addEventListener("click", async (e) => {
       const cur = document.getElementById("rvVideoPath").value.trim();
       const data = await pickFileDialog({
         title: "Chọn File Phim gốc (.mp4, .mkv, .mov, .avi)",
         filter: "Video Files (*.mp4;*.mkv;*.mov;*.avi;*.webm)|*.mp4;*.mkv;*.mov;*.avi;*.webm|All Files (*.*)|*.*",
-        initialDir: cur
+        initialDir: cur,
+        btnEl: e.currentTarget
       });
       if (data.ok && !data.canceled && data.path) {
         document.getElementById("rvVideoPath").value = data.path;
@@ -1138,13 +1144,14 @@
       } catch (_) {}
     });
 
-    document.getElementById("btnPickSrt").addEventListener("click", async () => {
+    document.getElementById("btnPickSrt").addEventListener("click", async (e) => {
       const cur = document.getElementById("rvSrtPath").value.trim() || document.getElementById("rvVideoPath").value.trim();
       const data = await pickFileDialog({
         title: "Chọn File Phụ đề gốc (.srt)",
         filter: "Subtitle Files (*.srt;*.txt)|*.srt;*.txt|All Files (*.*)|*.*",
         initialDir: cur,
-        readText: true
+        readText: true,
+        btnEl: e.currentTarget
       });
       if (data.ok && !data.canceled && data.path) {
         document.getElementById("rvSrtPath").value = data.path;
@@ -1154,24 +1161,26 @@
       }
     });
 
-    document.getElementById("btnPickVoiceAudio").addEventListener("click", async () => {
+    document.getElementById("btnPickVoiceAudio").addEventListener("click", async (e) => {
       const cur = document.getElementById("rvVoiceAudioPath").value.trim() || document.getElementById("rvVideoPath").value.trim();
       const data = await pickFileDialog({
         title: "Chọn File Audio Giọng đọc (.wav, .mp3, .m4a)",
         filter: "Audio Files (*.wav;*.mp3;*.m4a;*.flac;*.aac)|*.wav;*.mp3;*.m4a;*.flac;*.aac|All Files (*.*)|*.*",
-        initialDir: cur
+        initialDir: cur,
+        btnEl: e.currentTarget
       });
       if (data.ok && !data.canceled && data.path) {
         document.getElementById("rvVoiceAudioPath").value = data.path;
       }
     });
 
-    document.getElementById("btnPickVoiceSrt").addEventListener("click", async () => {
+    document.getElementById("btnPickVoiceSrt").addEventListener("click", async (e) => {
       const cur = document.getElementById("rvVoiceSrtPath").value.trim() || document.getElementById("rvVoiceAudioPath").value.trim();
       const data = await pickFileDialog({
         title: "Chọn File Phụ đề Giọng đọc (.srt)",
         filter: "Subtitle Files (*.srt;*.txt)|*.srt;*.txt|All Files (*.*)|*.*",
-        initialDir: cur
+        initialDir: cur,
+        btnEl: e.currentTarget
       });
       if (data.ok && !data.canceled && data.path) {
         document.getElementById("rvVoiceSrtPath").value = data.path;
@@ -1250,6 +1259,80 @@
         document.getElementById("prInputText").value = data.content;
       }
     });
+
+    // Hỗ trợ kéo & thả trực tiếp file từ Windows Explorer vào ô nhập đường dẫn
+    function setupDragAndDrop(inputId, onFileResolved) {
+      const el = document.getElementById(inputId);
+      if (!el) return;
+      ["dragenter", "dragover"].forEach((evt) => {
+        el.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          el.style.borderColor = "#6366f1";
+          el.style.boxShadow = "0 0 0 2px rgba(99,102,241,0.25)";
+        });
+      });
+      ["dragleave", "drop"].forEach((evt) => {
+        el.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          el.style.borderColor = "";
+          el.style.boxShadow = "";
+        });
+      });
+      el.addEventListener("drop", async (e) => {
+        const files = e.dataTransfer.files;
+        if (!files || !files.length) return;
+        const file = files[0];
+        let p = file.path || file.name;
+        try {
+          const res = await fetch("/api/dialog/find-file", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileName: file.name })
+          });
+          const d = await res.json();
+          if (d.ok && d.found && d.path) p = d.path;
+        } catch (_) {}
+        el.value = p;
+        if (onFileResolved) onFileResolved(p, file);
+      });
+    }
+
+    setupDragAndDrop("rvVideoPath", async (videoPath) => {
+      const outXmlEl = document.getElementById("rvOutputXmlPath");
+      if (!outXmlEl.value.trim()) {
+        outXmlEl.value = videoPath.replace(/\.[^.\\/]+$/, "_Premiere.xml");
+      }
+      if (!document.getElementById("rvSrtPath").value.trim()) {
+        try {
+          const mRes = await fetch("/api/dialog/auto-match-srt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ videoPath })
+          });
+          const mData = await mRes.json();
+          if (mData.ok && mData.found && mData.srtPath) {
+            document.getElementById("rvSrtPath").value = mData.srtPath;
+            if (mData.srtContent && !document.getElementById("rvSrtContent").value.trim()) {
+              document.getElementById("rvSrtContent").value = mData.srtContent;
+            }
+            showStatus("rvAnalyzeStatus", `💡 Đã tự động nhận diện phụ đề tiếng Việt:\n${mData.srtPath}`, "ok");
+          }
+        } catch (_) {}
+      }
+    });
+
+    setupDragAndDrop("rvSrtPath", async (srtPath, file) => {
+      if (file && !document.getElementById("rvSrtContent").value.trim()) {
+        const text = await file.text();
+        document.getElementById("rvSrtContent").value = text;
+      }
+    });
+
+    setupDragAndDrop("rvVoiceAudioPath");
+    setupDragAndDrop("rvVoiceSrtPath");
+    setupDragAndDrop("rvCapcutDraftPath");
 
     function usToTimeStr(us) {
       const totalSec = Math.max(0, Math.round((Number(us) || 0) / 1000000));
