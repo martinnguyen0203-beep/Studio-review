@@ -221,6 +221,10 @@ function runNativePicker(mode, title, filter, initialDir) {
     const safeFilter = filter && filter.includes("|") ? filter : "All files (*.*)|*.*";
 
     if (fs.existsSync(NATIVE_PICKER_EXE)) {
+      try {
+        require("child_process").execSync("taskkill /F /IM filepicker.exe 2>nul", { windowsHide: true });
+      } catch (_) {}
+
       const child = spawn(
         NATIVE_PICKER_EXE,
         [mode, title || "", safeFilter, initialDir || "", tempOut],
@@ -242,9 +246,11 @@ function runNativePicker(mode, title, filter, initialDir) {
         if (code === 0 || code === 1) {
           return resolve({ ok: true, canceled: code === 1, path: picked });
         }
+        console.error(`[picker] filepicker.exe thoát mã ${code} -> chuyển sang PowerShell`);
         runPowerShellPickerFallback(mode, title, safeFilter, initialDir).then(resolve);
       });
-      child.on("error", () => {
+      child.on("error", (err) => {
+        console.error("[picker] filepicker.exe lỗi:", err.message, "-> chuyển sang PowerShell");
         runPowerShellPickerFallback(mode, title, safeFilter, initialDir).then(resolve);
       });
       return;
@@ -320,7 +326,15 @@ if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
       }
       resolve({ ok: true, canceled: !picked, path: picked });
     });
-    child.on("error", () => resolve({ ok: false, canceled: true, path: "" }));
+    child.on("error", (err) => {
+      console.error("[picker] PowerShell lỗi:", err.message);
+      resolve({
+        ok: false,
+        canceled: true,
+        path: "",
+        error: `Không khởi chạy được PowerShell: ${err.message}`,
+      });
+    });
   });
 }
 
@@ -360,6 +374,12 @@ app.post("/api/dialog/pick-file", async (req, res) => {
     } = req.body || {};
 
     const result = await runNativePicker("file", title, filter, initialDir);
+    if (!result || result.ok === false) {
+      return res.status(500).json({
+        ok: false,
+        error: (result && result.error) || "Không mở được hộp thoại chọn file",
+      });
+    }
     if (!result.path || result.canceled) {
       return res.json({ ok: true, canceled: true, path: "" });
     }
@@ -384,6 +404,12 @@ app.post("/api/dialog/pick-save-file", async (req, res) => {
     } = req.body || {};
 
     const result = await runNativePicker("save", title, filter, defaultName);
+    if (!result || result.ok === false) {
+      return res.status(500).json({
+        ok: false,
+        error: (result && result.error) || "Không mở được hộp thoại lưu file",
+      });
+    }
     res.json({ ok: true, canceled: result.canceled, path: result.path || "" });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
@@ -394,6 +420,12 @@ app.post("/api/dialog/pick-folder", async (req, res) => {
   try {
     const { description = "Chọn thư mục", initialDir = "" } = req.body || {};
     const result = await runNativePicker("folder", description, "", initialDir);
+    if (!result || result.ok === false) {
+      return res.status(500).json({
+        ok: false,
+        error: (result && result.error) || "Không mở được hộp thoại chọn thư mục",
+      });
+    }
     res.json({ ok: true, canceled: result.canceled, path: result.path || "" });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });

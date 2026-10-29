@@ -8,6 +8,9 @@ namespace FilePicker {
         [STAThread]
         static int Main(string[] args) {
             try {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+
                 string mode = args.Length > 0 ? args[0] : "file";
                 string title = args.Length > 1 ? args[1] : "Chọn file";
                 string filter = args.Length > 2 ? args[2] : "All files (*.*)|*.*";
@@ -40,39 +43,51 @@ namespace FilePicker {
 
                 string result = "";
 
-                if (mode == "folder") {
-                    using (var d = new FolderBrowserDialog()) {
-                        d.Description = title;
-                        d.ShowNewFolderButton = true;
-                        if (!string.IsNullOrEmpty(validDir)) d.SelectedPath = validDir;
-                        if (d.ShowDialog() == DialogResult.OK) {
-                            result = d.SelectedPath;
+                using (Form top = new Form()) {
+                    top.Size = new System.Drawing.Size(0, 0);
+                    top.StartPosition = FormStartPosition.Manual;
+                    top.Location = new System.Drawing.Point(-2000, -2000);
+                    top.ShowInTaskbar = false;
+                    top.TopMost = true;
+                    top.Show();
+                    top.BringToFront();
+                    top.Activate();
+
+                    if (mode == "folder") {
+                        using (var d = new FolderBrowserDialog()) {
+                            d.Description = title;
+                            d.ShowNewFolderButton = true;
+                            if (!string.IsNullOrEmpty(validDir)) d.SelectedPath = validDir;
+                            if (d.ShowDialog(top) == DialogResult.OK) {
+                                result = d.SelectedPath;
+                            }
+                        }
+                    } else if (mode == "save") {
+                        using (var d = new SaveFileDialog()) {
+                            d.Title = title;
+                            d.Filter = safeFilter;
+                            d.RestoreDirectory = true;
+                            if (!string.IsNullOrEmpty(validDir)) d.InitialDirectory = validDir;
+                            if (!string.IsNullOrEmpty(initialDir) && !Directory.Exists(initialDir)) {
+                                d.FileName = Path.GetFileName(initialDir);
+                            }
+                            if (d.ShowDialog(top) == DialogResult.OK) {
+                                result = d.FileName;
+                            }
+                        }
+                    } else {
+                        using (var d = new OpenFileDialog()) {
+                            d.Title = title;
+                            d.Filter = safeFilter;
+                            d.RestoreDirectory = true;
+                            d.Multiselect = false;
+                            if (!string.IsNullOrEmpty(validDir)) d.InitialDirectory = validDir;
+                            if (d.ShowDialog(top) == DialogResult.OK) {
+                                result = d.FileName;
+                            }
                         }
                     }
-                } else if (mode == "save") {
-                    using (var d = new SaveFileDialog()) {
-                        d.Title = title;
-                        d.Filter = safeFilter;
-                        d.RestoreDirectory = true;
-                        if (!string.IsNullOrEmpty(validDir)) d.InitialDirectory = validDir;
-                        if (!string.IsNullOrEmpty(initialDir) && !Directory.Exists(initialDir)) {
-                            d.FileName = Path.GetFileName(initialDir);
-                        }
-                        if (d.ShowDialog() == DialogResult.OK) {
-                            result = d.FileName;
-                        }
-                    }
-                } else {
-                    using (var d = new OpenFileDialog()) {
-                        d.Title = title;
-                        d.Filter = safeFilter;
-                        d.RestoreDirectory = true;
-                        d.Multiselect = false;
-                        if (!string.IsNullOrEmpty(validDir)) d.InitialDirectory = validDir;
-                        if (d.ShowDialog() == DialogResult.OK) {
-                            result = d.FileName;
-                        }
-                    }
+                    top.Close();
                 }
 
                 if (!string.IsNullOrEmpty(result)) {

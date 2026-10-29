@@ -1048,7 +1048,12 @@
         if (data.ok && data.canceled) {
           return data;
         }
-      } catch (_) {}
+        if (data.ok === false) {
+          toast("Lỗi hộp thoại chọn file: " + (data.error || "không rõ nguyên nhân"), "err");
+        }
+      } catch (err) {
+        toast("Không gọi được API chọn file: " + err.message, "err");
+      }
       finally {
         if (btnEl) btnEl.innerText = origText;
       }
@@ -1065,6 +1070,7 @@
       });
       if (data.ok && !data.canceled && data.path) {
         document.getElementById("rvVideoPath").value = data.path;
+        showStatus("rvAnalyzeStatus", `✅ Đã chọn File Phim: ${data.path}`, "ok");
 
         // Tự động tìm phụ đề .srt tương ứng trong cùng thư mục
         try {
